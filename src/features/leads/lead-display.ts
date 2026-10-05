@@ -8,6 +8,10 @@ const PLACEHOLDER_INTEREST = 'Interesse geral'
  * telefone, porque o `chatId` tambem guarda conversas de grupo (`@g.us`) e
  * identificadores deusuario sem numero (`@lid`) — o backend ja separa os dois
  * casos em extractPhone (leads/lead-values.ts:6).
+ *
+ * So formata 10 ou 11 digitos uteis, que e o que o WhatsApp entrega para chat
+ * privado no Brasil. Qualquer outra coisa volta crua: chutar o DDD de um numero
+ * desconhecido produz um telefone errado e crivel, que e pior que nenhum.
  */
 export const formatPhone = (value: string | null | undefined): string | null => {
   if (!value) {
@@ -19,10 +23,17 @@ export const formatPhone = (value: string | null | undefined): string | null => 
     return null
   }
 
-  const national = digits.startsWith('55') ? digits.slice(2) : digits
+  // O 55 do DDD nao pode ser confundido com o do codigo de pais. O WhatsApp
+  // brasileiro manda 13 digitos com 55; um celular nacional de DDD 55 tem 11
+  // digitos comecados por 55 e nao tem codigo de pais.
+  const hasCountryCode =
+    (digits.length === 13 || digits.length === 12) && digits.startsWith('55')
+  const national = hasCountryCode ? digits.slice(2) : digits
 
   if (national.length === 11) {
-    return `+55 (${national.slice(0, 2)}) ${national.slice(2, 7)}-${national.slice(7)}`
+    const area = national.slice(0, 2)
+    const prefix = hasCountryCode ? '+55 ' : ''
+    return `${prefix}(${area}) ${national.slice(2, 7)}-${national.slice(7)}`
   }
 
   if (national.length === 10) {
