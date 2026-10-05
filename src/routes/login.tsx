@@ -1,5 +1,4 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -24,7 +23,6 @@ export const Route = createFileRoute('/login')({
 
 function LoginPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const signIn = useSignIn()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -33,7 +31,6 @@ function LoginPage() {
     event.preventDefault()
     try {
       await signIn.mutateAsync({ email, password })
-      await queryClient.invalidateQueries({ queryKey: sessionQuery.queryKey })
       await navigate({ to: '/' })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Falha ao entrar')

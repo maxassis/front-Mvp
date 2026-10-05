@@ -29,10 +29,12 @@ export const useSignIn = () => {
         )
       }
 
+      // Invalidate nao serve aqui: o guard de rota le a sessao por
+      // `ensureQueryData`, que devolve o cache ainda nulo e joga para /login.
+      // E preciso gravar o valor novo, nao marcar como velho.
+      const { data: session } = await authClient.getSession()
+      queryClient.setQueryData(sessionKeys.all, session ?? null)
       return data
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sessionKeys.all })
     }
   })
 }
@@ -61,10 +63,8 @@ export const useSignUp = () =>
     }
   })
 
-export const useVerifyEmailOtp = () => {
-  const queryClient = useQueryClient()
-
-  return useMutation({
+export const useVerifyEmailOtp = () =>
+  useMutation({
     mutationFn: async (input: { email: string; otp: string }) => {
       const { data, error } = await authClient.emailOtp.verifyEmail({
         email: input.email,
@@ -76,12 +76,8 @@ export const useVerifyEmailOtp = () => {
       }
 
       return data
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: sessionKeys.all })
     }
   })
-}
 
 export const useSignOut = () => {
   const queryClient = useQueryClient()
