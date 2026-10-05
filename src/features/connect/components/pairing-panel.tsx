@@ -7,8 +7,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useRequestPairingCode } from '@/features/connect/mutations'
-import { wahaQrQuery, wahaSessionQuery } from '@/features/connect/queries'
+import { toast } from 'sonner'
+
+import { useRequestPairingCode, useRestartInstance } from '@/features/connect/mutations'
+import { qrIsUnavailable, wahaQrQuery, wahaSessionQuery } from '@/features/connect/queries'
 import { instanceKeys, instancesQuery } from '@/features/instances/queries'
 
 /** A WAHA troca a imagem mantendo a URL; o carimbo novo derruba o cache do navegador. */
@@ -32,10 +34,17 @@ interface PairingPanelProps {
 export function PairingPanel({ instanceId }: PairingPanelProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const qr = useQuery(wahaQrQuery(instanceId, true))
+  const restart = useRestartInstance(instanceId)
   const session = useQuery(wahaSessionQuery(instanceId, true))
   const instances = useQuery(instancesQuery)
   const didNavigate = useRef(false)
+
+  // Nao faz sentido pedir QR antes da sessao estar started: a WAHA so emite em
+  // SCAN_QR_CODE. A sessao que ja esta conectada nao precisa de nada disso.
+  const status = session.data?.status ?? null
+  const needsStart = status !== 'WORKING'
+  const qr = useQuery(wahaQrQuery(instanceId, needsStart))
+  const qrUnavailable = qrIsUnavailable(qr.error)
 
   const phoneNumber =
     instances.data?.find((instance) => instance.id === instanceId)?.phoneNumber ?? ''
@@ -53,6 +62,14 @@ export function PairingPanel({ instanceId }: PairingPanelProps) {
       .then(() => navigate({ to: '/' }))
   }, [isWorking, navigate, queryClient])
 
+  const handleRestart = () => {
+    restart.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Sessao reiniciada. Um novo QR code vai aparecer.')
+      }
+    })
+  }
+
   return (
     <div className="flex h-full flex-col items-center overflow-y-auto p-6">
       <div className="flex w-full max-w-md flex-col gap-4">
@@ -68,7 +85,23 @@ export function PairingPanel({ instanceId }: PairingPanelProps) {
             <CardTitle>QR code</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-3">
-            {qr.isError ? (
+            {qrUnavailable ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    A sessao no WhatsApp precisa ser reiniciada para emitir um QR code novo.
+                  </AlertDescription>
+                </Alert>
+                <Button
+                  disabled={restart.isPending}
+                  onClick={handleRestart}
+                  size="sm"
+                  type="button"
+                >
+                  {restart.isPending ? 'Reiniciando...' : 'Reiniciar sessao'}
+                </Button>
+              </div>
+            ) : qr.isError ? (
               <Alert variant="destructive">
                 <AlertDescription>
                   Nao foi possivel carregar o QR code. {qr.error.message}
@@ -86,6 +119,12 @@ export function PairingPanel({ instanceId }: PairingPanelProps) {
                 src={qrSrc}
               />
             )}
+
+            <p className="text-xs text-muted-foreground">
+              {status === null
+                ? 'Consultando o estado da sessao...'
+                : `Estado na WAHA: ${status}`}
+            </p>
           </CardContent>
         </Card>
 

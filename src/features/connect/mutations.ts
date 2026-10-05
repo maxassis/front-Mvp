@@ -32,7 +32,7 @@ export const useCreateInstance = () => {
   return useMutation({
     mutationFn: (input: CreateInstanceInput) => {
       const body: CreateInstanceBody = {
-        // A criacao recusa agenda_enabled true; a agenda so e ligada depois, no onboarding.
+        // A criacao recusa agenda_enabled true; a agenda so e liga depois, no onboarding.
         agenda_enabled: false,
         phone_number: input.phoneNumber,
         provider: 'waha',
@@ -59,6 +59,26 @@ export const useStartInstance = (instanceId: string) => {
       api.post(`/api/whatsapp/instances/${instanceId}/start`, whatsappInstanceSchema),
     onError: notifyError,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: instanceKeys.all })
+  })
+}
+
+/**
+ * Reiniciar devolve a sessao ao estado em que a WAHA volta a emitir QR. E o
+ * unico caminho de volta quando a sessao cai, ja que o endpoint de QR responde
+ * 422 fora de SCAN_QR_CODE e nao ha leitura que conserte isso.
+ */
+export const useRestartInstance = (instanceId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      api.post(`/api/whatsapp/instances/${instanceId}/restart`, whatsappInstanceSchema),
+    onError: notifyError,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: instanceKeys.all })
+      await queryClient.invalidateQueries({ queryKey: connectKeys.qr(instanceId) })
+      await queryClient.invalidateQueries({ queryKey: connectKeys.session(instanceId) })
+    }
   })
 }
 
