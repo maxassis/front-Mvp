@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Outlet, createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { AlertCircle } from 'lucide-react'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSignOut } from '@/features/auth/mutations'
-import { sessionQuery } from '@/features/auth/queries'
+import { sessionKeys, sessionQuery } from '@/features/auth/queries'
 import { instancesQuery } from '@/features/instances/queries'
 import { useUiStore } from '@/stores/ui-store'
 
@@ -31,6 +32,7 @@ export const Route = createFileRoute('/_authed')({
 
 function AuthedLayout() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const signOut = useSignOut()
   const [isSigningOut, setIsSigningOut] = useState(false)
 
@@ -44,6 +46,12 @@ function AuthedLayout() {
     try {
       await signOut.mutateAsync()
       await router.navigate({ to: '/login' })
+    } catch {
+      // Sessao morta e cookie residual: zera o cache local para o guard nao
+      // devolver a sessao velha e travar o usuario nesta tela.
+      queryClient.setQueryData(sessionKeys.all, null)
+      await router.navigate({ to: '/login' })
+      toast.error('Nao foi possivel encerrar a sessao no servidor, mas voce saiu localmente.')
     } finally {
       setIsSigningOut(false)
     }
