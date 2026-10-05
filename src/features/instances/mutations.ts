@@ -23,6 +23,17 @@ export const useToggleChatbot = (instanceId: string) => {
   })
 }
 
+export const useStopInstance = (instanceId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () =>
+      api.post(`/api/whatsapp/instances/${instanceId}/stop`, whatsappInstanceSchema),
+    onError: notifyError,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: instanceKeys.all })
+  })
+}
+
 export const useRemoveInstance = () => {
   const queryClient = useQueryClient()
   const selectInstance = useUiStore((state) => state.selectInstance)

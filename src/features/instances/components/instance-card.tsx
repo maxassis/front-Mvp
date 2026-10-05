@@ -16,7 +16,7 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { InstanceStatusBadge } from '@/features/instances/components/instance-status-badge'
 import { RemoveInstanceDialog } from '@/features/instances/components/remove-instance-dialog'
-import { useToggleChatbot } from '@/features/instances/mutations'
+import { useStopInstance, useToggleChatbot } from '@/features/instances/mutations'
 import { useUiStore } from '@/stores/ui-store'
 
 const PROVIDER_LABEL = {
@@ -32,6 +32,7 @@ export function InstanceCard({ instance }: InstanceCardProps) {
   const navigate = useNavigate()
   const selectInstance = useUiStore((state) => state.selectInstance)
   const toggleChatbot = useToggleChatbot(instance.id)
+  const stop = useStopInstance(instance.id)
 
   const displayName = instance.instanceName ?? instance.phoneNumber
 
@@ -84,6 +85,17 @@ export function InstanceCard({ instance }: InstanceCardProps) {
         <Button onClick={handleOpenLeads} size="sm" type="button" variant="outline">
           <MessageSquare /> Leads
         </Button>
+        {instance.provider === 'waha' && instance.status !== 'disconnected' ? (
+          <Button
+            disabled={stop.isPending}
+            onClick={() => stop.mutate()}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            {stop.isPending ? 'Parando...' : 'Parar'}
+          </Button>
+        ) : null}
         <RemoveInstanceDialog instance={instance} />
       </CardFooter>
     </Card>
