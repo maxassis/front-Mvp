@@ -54,6 +54,18 @@ const toApiError = (status: number, body: unknown): ApiError => {
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
+/**
+ * Chamado quando a API responde 401 fora do fluxo de sessao. O guard de rota so
+ * roda na navegacao, entao sem esteAviso um cookie que morre no meio do uso
+ * deixa a tela presa mostrando dado velho e um alerta de erro, sem caminho para
+ * voltar ao login.
+ */
+let onUnauthorized: (() => void) | null = null
+
+export const setUnauthorizedHandler = (handler: (() => void) | null): void => {
+  onUnauthorized = handler
+}
+
 const request = async (path: string, init: RequestInit): Promise<Response> => {
   const response = await fetch(`${BASE_URL}${path}`, {
     ...init,
@@ -62,7 +74,15 @@ const request = async (path: string, init: RequestInit): Promise<Response> => {
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    throw toApiError(response.status, body)
+    const error = toApiError(response.status, body)
+
+    // O proprio sign-in responde 401 com credencial errada; nesse caso quem trata
+    // e a tela de login, nao um logout global.
+    if (error.isUnauthorized && !path.startsWith('/api/auth/')) {
+      onUnauthorized?.()
+    }
+
+    throw error
   }
 
   return response
