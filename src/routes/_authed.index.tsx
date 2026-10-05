@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Plus, Smartphone } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -7,20 +7,35 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { InstanceCard } from '@/features/instances/components/instance-card'
 import { instancesQuery } from '@/features/instances/queries'
+import { useUiStore } from '@/stores/ui-store'
 
 export const Route = createFileRoute('/_authed/')({ component: InstancesPage })
 
 function InstancesPage() {
+  const navigate = useNavigate()
+  const selectInstance = useUiStore((state) => state.selectInstance)
   const instances = useQuery(instancesQuery)
   const list = instances.data ?? []
 
+  // Mesmo motivo do atalho no header: sem limpar a selecao, /connect abre o
+  // pareamento da instancia antiga em vez do formulario de numero novo.
+  const handleConnectNew = () => {
+    selectInstance(null)
+    void navigate({ to: '/connect' })
+  }
+
   return (
     <div className="mx-auto flex h-full max-w-5xl flex-col gap-6 overflow-y-auto p-6">
-      <div>
-        <h1 className="text-xl font-semibold">Instancias</h1>
-        <p className="text-sm text-muted-foreground">
-          Gerencie suas conexoes de WhatsApp em um so lugar
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">Conexoes</h1>
+          <p className="text-sm text-muted-foreground">
+            Gerencie suas conexoes de WhatsApp em um so lugar
+          </p>
+        </div>
+        <Button onClick={handleConnectNew} size="sm" type="button">
+          <Plus /> Conectar numero
+        </Button>
       </div>
 
       {instances.isPending ? (

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Outlet, createFileRoute, redirect, useRouter } from '@tanstack/react-router'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 
@@ -40,6 +40,13 @@ function AuthedLayout() {
   const instances = useQuery(instancesQuery)
   const selectedInstanceId = useUiStore((state) => state.selectedInstanceId)
   const selectInstance = useUiStore((state) => state.selectInstance)
+
+  // A rota /connect abre o formulario de numero novo so quando nenhuma
+  // instancia esta selecionada, entao o atalho precisa limpar antes de navegar.
+  const handleConnectNew = () => {
+    selectInstance(null)
+    void router.navigate({ to: '/connect' })
+  }
 
   const handleSignOut = async () => {
     setIsSigningOut(true)
@@ -84,6 +91,10 @@ function AuthedLayout() {
             </SelectContent>
           </Select>
         )}
+
+        <Button onClick={handleConnectNew} size="sm" type="button">
+          <Plus /> Conectar numero
+        </Button>
 
         <Button disabled={isSigningOut} onClick={handleSignOut} size="sm" variant="outline">
           Sair
