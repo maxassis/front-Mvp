@@ -19,10 +19,20 @@ export function ConnectForm({ onPaired }: ConnectFormProps) {
   const create = useCreateInstance()
   const [instanceName, setInstanceName] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [phoneError, setPhoneError] = useState<string | null>(null)
   const [createdId, setCreatedId] = useState<string | null>(null)
 
+  // Mesma regra da rota de pairing-code: so digitos, entre 10 e 15. O backend
+  // aceita qualquer string na criacao, entao sem isso um numero curto como
+  // "5522" e gravado e so quebra bem depois, na hora de parear.
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
+    const digits = phoneNumber.replaceAll(/\D/gu, '')
+    if (digits.length < 10 || digits.length > 15) {
+      setPhoneError('Informe o numero completo com DDD, so digitos (10 a 15).')
+      return
+    }
+    setPhoneError(null)
     create.mutate(
       { instanceName, phoneNumber: phoneNumber.trim() },
       {
@@ -64,12 +74,16 @@ export function ConnectForm({ onPaired }: ConnectFormProps) {
                 autoComplete="tel"
                 id="connect-phone"
                 inputMode="tel"
-                onChange={(event) => setPhoneNumber(event.target.value)}
+                onChange={(event) => {
+                  setPhoneNumber(event.target.value)
+                  setPhoneError(null)
+                }}
                 placeholder="5511999999999"
                 required
                 type="tel"
                 value={phoneNumber}
               />
+              {phoneError ? <p className="text-sm text-destructive">{phoneError}</p> : null}
             </div>
 
             <div className="space-y-2">
