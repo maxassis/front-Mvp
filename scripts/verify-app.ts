@@ -181,6 +181,7 @@ const main = async () => {
     check('avanca para a tela de pareamento', true)
 
     const instanceId = createdBody.id
+    let secondId: string | null = null
     const qrResponse = await fetch(`${API_URL}/api/whatsapp/instances/${instanceId}/qr`, {
       headers: { cookie: (await context.cookies()).map(c => `${c.name}=${c.value}`).join('; ') }
     })
@@ -192,10 +193,11 @@ const main = async () => {
 
     await page.goto(APP_URL, { waitUntil: 'networkidle' })
     await page.getByRole('button', { name: 'Parar' }).click()
-    await page.getByRole('button', { name: 'Conectar' }).first().waitFor({ timeout: 20_000 })
+    // exact: "Conectar numero" do header/painel tambem casa por substring.
+    await page.getByRole('button', { name: 'Conectar', exact: true }).first().waitFor({ timeout: 20_000 })
     check('parar desconecta a instancia', true)
 
-    await page.getByRole('button', { name: 'Conectar' }).first().click()
+    await page.getByRole('button', { name: 'Conectar', exact: true }).first().click()
     await page.waitForURL('**/connect', { timeout: 15_000 })
     await page.getByRole('button', { name: 'Iniciar sessao' }).waitFor({ timeout: 20_000 })
     check('sessao parada mostra Iniciar sessao em vez de erro', true)
@@ -203,6 +205,33 @@ const main = async () => {
     await page.getByRole('button', { name: 'Iniciar sessao' }).click()
     await page.getByText('Codigo de pareamento').first().waitFor({ timeout: 30_000 })
     check('iniciar libera QR e codigo de novo', true)
+
+    // Com instancia existente, o atalho permanente precisa abrir o formulario
+    // vazio, nao o pareamento da instancia antiga.
+    await page.goto(APP_URL, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Conectar numero' }).first().click()
+    await page.waitForURL('**/connect', { timeout: 15_000 })
+    const secondPhone = await page.getByLabel('Numero do WhatsApp').inputValue()
+    const secondName = await page.getByLabel('Nome da instancia').inputValue()
+    check('atalho abre formulario vazio com instancia existente', secondPhone === '' && secondName === '')
+
+    await page.getByLabel('Nome da instancia').fill(`verificacao-${RUN_ID}-2`)
+    await page.getByLabel('Numero do WhatsApp').fill(`5521${String(RUN_ID).slice(-9)}`)
+    const secondCreate = page.waitForResponse(
+      res => res.url().startsWith(`${API_URL}/api/whatsapp/instances`) && res.request().method() === 'POST',
+      { timeout: 20_000 }
+    )
+    await page.getByRole('button', { name: 'Criar e conectar' }).click()
+    const secondCreated = await secondCreate
+    check(
+      'cria segunda instancia pelo atalho',
+      secondCreated.status() === 201,
+      `status ${secondCreated.status()}`
+    )
+    await page.getByText('Codigo de pareamento').first().waitFor({ timeout: 30_000 })
+    check('segunda instancia chega ao pareamento', true)
+    const secondBody = await secondCreated.json()
+    secondId = secondBody.id
 
     const leadsResponse = await page.goto(`${APP_URL}/leads`, { waitUntil: 'networkidle' })
     check('rota /leads responde', leadsResponse?.status() === 200, String(leadsResponse?.status()))
@@ -222,10 +251,13 @@ const main = async () => {
     )
     check('sem erro de console inesperado', fatalErrors.length === 0, fatalErrors.join(' | '))
 
-    await fetch(`${API_URL}/api/whatsapp/instances/${instanceId}`, {
-      headers: { cookie: (await context.cookies()).map(c => `${c.name}=${c.value}`).join('; ') },
-      method: 'DELETE'
-    }).catch(() => null)
+    const cookieHeader = (await context.cookies()).map(c => `${c.name}=${c.value}`).join('; ')
+    for (const id of [instanceId, secondId].filter((id): id is string => id !== null)) {
+      await fetch(`${API_URL}/api/whatsapp/instances/${id}`, {
+        headers: { cookie: cookieHeader },
+        method: 'DELETE'
+      }).catch(() => null)
+    }
   } catch (error) {
     failures += 1
     process.stdout.write(`[FALHOU] excecao: ${error instanceof Error ? error.stack : String(error)}\n`)
