@@ -37,7 +37,7 @@ export function LeadList({
 }: LeadListProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="p-3">
+      <div className="shrink-0 p-3">
         <Tabs
           onValueChange={(value) => {
             const next = LEAD_FILTERS.find((option) => option === value)
@@ -47,7 +47,9 @@ export function LeadList({
           }}
           value={filter}
         >
-          <TabsList className="grid w-full grid-cols-4">
+          {/* Quatro rotulos nao cabem numa linha de 288px; duas colunas mantem cada um
+              clicavel em vez de sobrepor texto sobre texto. */}
+          <TabsList className="grid h-auto w-full grid-cols-2">
             {LEAD_FILTERS.map((option) => (
               <TabsTrigger key={option} value={option}>
                 {LEAD_FILTER_LABEL[option]}
@@ -57,7 +59,7 @@ export function LeadList({
         </Tabs>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="min-h-0 flex-1 border-t">
         <div className="space-y-1 px-3 pb-3">
           {isPending ? (
             <div className="space-y-2">
