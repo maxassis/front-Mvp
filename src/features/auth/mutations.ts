@@ -79,6 +79,20 @@ export const useVerifyEmailOtp = () =>
     }
   })
 
+export const useResendVerificationOtp = () =>
+  useMutation({
+    mutationFn: async (input: { email: string }) => {
+      const { error } = await authClient.emailOtp.sendVerificationOtp({
+        email: input.email,
+        type: 'email-verification'
+      })
+
+      if (error) {
+        throw new Error(error.message ?? 'Nao foi possivel reenviar o codigo')
+      }
+    }
+  })
+
 export const useSignOut = () => {
   const queryClient = useQueryClient()
 

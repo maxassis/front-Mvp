@@ -6,6 +6,10 @@
  * vem logo em seguida e exige a senha de novo.
  *
  * Fica so em memoria: nada vai para o disco, e um reload do navegador limpa.
+ *
+ * Ler nao consome. O OTP tem 5 tentativas e 10 minutos de validade, entao um
+ * codigo digitado errado nao pode destruir a senha e deixar a tela sem para
+ * onde ir. O consumo acontece no `clearPendingPassword`, depois do sign-in.
  */
 let pendingPassword: string | null = null
 
@@ -13,9 +17,8 @@ export const setPendingPassword = (password: string): void => {
   pendingPassword = password
 }
 
-/** Le e limpa em uma operacao, para a senha nao ficar em memoria apos o uso. */
-export const takePendingPassword = (): string | null => {
-  const password = pendingPassword
+export const peekPendingPassword = (): string | null => pendingPassword
+
+export const clearPendingPassword = (): void => {
   pendingPassword = null
-  return password
 }

@@ -7,8 +7,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useSignIn, useVerifyEmailOtp } from '@/features/auth/mutations'
-import { takePendingPassword } from '@/features/auth/sign-in-credentials'
+import { useResendVerificationOtp, useSignIn, useVerifyEmailOtp } from '@/features/auth/mutations'
+import {
+  clearPendingPassword,
+  peekPendingPassword
+} from '@/features/auth/sign-in-credentials'
 
 export const Route = createFileRoute('/register/verify')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -22,12 +25,13 @@ function VerifyEmailPage() {
   const navigate = useNavigate()
   const verify = useVerifyEmailOtp()
   const signIn = useSignIn()
+  const resend = useResendVerificationOtp()
   const [email, setEmail] = useState(emailFromSearch)
   const [otp, setOtp] = useState('')
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const password = takePendingPassword()
+    const password = peekPendingPassword()
 
     if (!password) {
       toast.error('Volte ao cadastro e repita o passo para informar a senha novamente.')
@@ -37,9 +41,18 @@ function VerifyEmailPage() {
     try {
       await verify.mutateAsync({ email, otp })
       await signIn.mutateAsync({ email, password })
+      clearPendingPassword()
       await navigate({ to: '/' })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Nao foi possivel confirmar o codigo')
+      // A senha fica na memoria de proposito: o OTP aceita 5 tentativas e um
+      // codigo errado nao pode trancar a tela. Se o sign-in falhar depois do
+      // OTP ja consumido, ai nao ha mais o que tentar.
+      if (verify.isIdle && signIn.isError) {
+        clearPendingPassword()
+        toast.error('Codigo confirmado, mas o login falhou. Entre com a senha na tela de login.')
+      } else {
+        toast.error(error instanceof Error ? error.message : 'Nao foi possivel confirmar o codigo')
+      }
     }
   }
 
@@ -55,20 +68,19 @@ function VerifyEmailPage() {
         title="Confirmar e-mail"
       >
         <form className="space-y-4" onSubmit={handleSubmit}>
-          {emailFromSearch.length === 0 ? (
-            <div className="space-y-2">
-              <Label htmlFor="verify-email">Email</Label>
-              <Input
-                autoComplete="email"
-                autoFocus
-                id="verify-email"
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                type="email"
-                value={email}
-              />
-            </div>
-          ) : null}
+          <div className="space-y-2">
+            <Label htmlFor="verify-email">Email</Label>
+            <Input
+              autoComplete="email"
+              autoFocus
+              disabled={emailFromSearch.length > 0}
+              id="verify-email"
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              type="email"
+              value={email}
+            />
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="verify-otp">Codigo</Label>
@@ -91,6 +103,21 @@ function VerifyEmailPage() {
               </AlertDescription>
             </Alert>
           ) : null}
+
+          {/* O OTP vale 10 minutos e nao ha como pedir outro pela API de cadastro,
+              entao a unica saida quando ele expira e reenviar por aqui. */}
+          <Button
+            disabled={resend.isPending || email.trim().length === 0}
+            onClick={() => resend.mutate({ email })}
+            type="button"
+            variant="link"
+          >
+            {resend.isPending
+              ? 'Reenviando...'
+              : resend.isSuccess
+                ? 'Codigo reenviado. Confira o e-mail.'
+                : 'Nao recebeu o codigo? Reenviar'}
+          </Button>
 
           <Button
             className="w-full"
