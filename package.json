@@ -13,7 +13,8 @@
     "check": "bun run lint && bun run typecheck",
     "verify:app": "bun scripts/verify-app.ts",
     "seed:leads": "bun scripts/seed-leads.ts",
-    "verify:leads": "bun scripts/verify-leads.ts"
+    "verify:leads": "bun scripts/verify-leads.ts",
+    "test": "bun test"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.3.0",
@@ -40,6 +41,7 @@
   "devDependencies": {
     "@tanstack/router-cli": "^1.167.40",
     "@tanstack/router-plugin": "^1.168.42",
+    "@types/bun": "^1.4.2",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
