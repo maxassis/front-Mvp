@@ -190,6 +190,20 @@ const main = async () => {
       `status ${qrResponse.status}`
     )
 
+    await page.goto(APP_URL, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Parar' }).click()
+    await page.getByRole('button', { name: 'Conectar' }).first().waitFor({ timeout: 20_000 })
+    check('parar desconecta a instancia', true)
+
+    await page.getByRole('button', { name: 'Conectar' }).first().click()
+    await page.waitForURL('**/connect', { timeout: 15_000 })
+    await page.getByRole('button', { name: 'Iniciar sessao' }).waitFor({ timeout: 20_000 })
+    check('sessao parada mostra Iniciar sessao em vez de erro', true)
+
+    await page.getByRole('button', { name: 'Iniciar sessao' }).click()
+    await page.getByText('Codigo de pareamento').first().waitFor({ timeout: 30_000 })
+    check('iniciar libera QR e codigo de novo', true)
+
     const leadsResponse = await page.goto(`${APP_URL}/leads`, { waitUntil: 'networkidle' })
     check('rota /leads responde', leadsResponse?.status() === 200, String(leadsResponse?.status()))
     await seeText(page, 'Nenhuma instancia selecionada', '/leads pede selecao de instancia')
