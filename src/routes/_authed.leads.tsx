@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { Building2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
+import type { Lead } from '@/api/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ConversationPanel } from '@/features/leads/components/conversation-panel'
 import { LeadList } from '@/features/leads/components/lead-list'
@@ -16,8 +17,23 @@ function LeadsPage() {
   const selectedInstanceId = useUiStore((state) => state.selectedInstanceId)
   const [filter, setFilter] = useState<LeadFilter>('all')
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null)
+  const lastKnownLead = useRef<Lead | undefined>(undefined)
 
   const leads = useQuery(leadsQuery({ instanceId: selectedInstanceId ?? '', status: filter }))
+
+  // Assumir tira o lead da aba "Pendentes", entao a lista recarregada sem ele e a
+  // conversa fecharia na mao do operador logo depois de ele abrir o composer.
+  // A ultima versao conhecida do lead, segurada em ref, mantem a conversa aberta
+  // enquanto o lead nao esta mais na lista.
+  const freshLead = (leads.data ?? []).find((lead) => lead.id === selectedLeadId)
+
+  if (freshLead) {
+    lastKnownLead.current = freshLead
+  } else if (!selectedLeadId) {
+    lastKnownLead.current = undefined
+  }
+
+  const selectedLead = freshLead ?? lastKnownLead.current
 
   if (!selectedInstanceId) {
     return (
@@ -31,21 +47,19 @@ function LeadsPage() {
     )
   }
 
-  const selectedLead = (leads.data ?? []).find((lead) => lead.id === selectedLeadId)
-
   return (
     <div className="flex h-full">
-      <section aria-label="Leads" className="flex w-80 min-h-0 shrink-0 flex-col border-r">
-        <h1 className="px-4 pt-4 text-lg font-semibold">Leads</h1>
-        {leads.isError ? (
-          <div className="p-3">
-            <Alert variant="destructive">
+      <section aria-label="Leads" className="flex w-72 min-h-0 shrink-0 flex-col border-r">
+        <div className="shrink-0 border-b p-3">
+          <h1 className="text-lg font-semibold">Leads</h1>
+          {leads.isError ? (
+            <Alert className="mt-2" variant="destructive">
               <AlertDescription>
                 Nao foi possivel carregar os leads. {leads.error.message}
               </AlertDescription>
             </Alert>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
         <LeadList
           filter={filter}
           isPending={leads.isPending}

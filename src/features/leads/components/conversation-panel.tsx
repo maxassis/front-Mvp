@@ -59,9 +59,20 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
   const messages = useQuery(leadMessagesQuery(lead?.id ?? ''))
 
   const orderedMessages = useMemo(() => [...(messages.data ?? [])].sort(byReceivedAt), [messages.data])
+  const lastLeadId = lead?.id ?? null
+
+  // Trocar de lead sempre abre no fim: abrir no topo de um historico longo
+  // esconde a conversa atual. A troca e o unico momento em que o scroll ignora
+  // a posicao em que o operador estava.
+  useEffect(() => {
+    const container = scrollRef.current
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
+  }, [lastLeadId])
 
   // A lista faz poll a cada 5s. Rolar para o fim a cada atualizacao jogaria o
-  // operador de volta para baixo enquanto ele lê o historico, então o scroll so
+  // operador de volta para baixo enquanto ele le o historico, entao o scroll so
   // acontece quando ele ja estava colado no fim.
   useEffect(() => {
     const container = scrollRef.current
@@ -134,7 +145,7 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
-        <div className="space-y-2 p-3">
+        <div className="space-y-2 p-3 pb-4">
           {messages.isPending ? (
             <div className="space-y-2">
               {[0, 1, 2].map((index) => (

@@ -54,7 +54,7 @@ export type LeadFilter = (typeof LEAD_FILTERS)[number]
 
 export const LEAD_FILTER_LABEL = {
   all: 'Todos',
-  assigned: 'Em atendimento',
+  assigned: 'Atendendo',
   closed: 'Fechados',
   new: 'Pendentes'
 } as const satisfies Record<LeadFilter, string>
