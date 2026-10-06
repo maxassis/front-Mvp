@@ -41,13 +41,15 @@ try {
   check('lead semeado aparece na lista', true)
 
   const listText = await page.locator('section[aria-label="Leads"]').innerText()
-  check('telefone formatado em pt-BR', listText.includes('+55 (11) 99000-0001'), listText.slice(0, 200))
+  check('card nao expoe telefone', !listText.includes('+55 (11) 99000-0001'), listText.slice(0, 200))
   check('intake do LLM aparece', listText.includes('Corte de cabelo'))
   check('status pendente rotulado', listText.includes('Pendente'))
 
   await page.getByText('Maria Souza').first().click()
   await page.getByText('Ola, voces abrem sabado?').waitFor({ timeout: 15_000 })
   check('conversa carrega a mensagem antiga', true)
+  const conversationText = await page.locator('section[aria-label="Conversa"]').innerText()
+  check('telefone formatado em pt-BR no cabecalho', conversationText.includes('+55 (11) 99000-0001'), conversationText.slice(0, 200))
   check(
     'ultima mensagem do cliente aparece',
     await page.getByText('Quero cortar o cabelo as 14h.').isVisible()
@@ -73,20 +75,9 @@ try {
   check('assumir revela o composer', true)
   check('lead agora aparece em atendimento', await page.getByText('Em atendimento').first().isVisible())
 
-  const pollCounter = { count: 0 }
-  const onRequest = request => {
-    if (request.url().includes('/api/leads') && request.method() === 'GET') {
-      pollCounter.count += 1
-    }
-  }
-  page.on('request', onRequest)
-  const before = pollCounter.count
-  await page.waitForTimeout(13_000)
-  page.off('request', onRequest)
   check(
-    'polling busca leads periodicamente',
-    pollCounter.count - before >= 1,
-    `${pollCounter.count - before} requisicoes em 13s`
+    'sem polling automatico de leads',
+    await page.getByRole('button', { name: 'Atualizar conversa' }).isVisible()
   )
 
   check(

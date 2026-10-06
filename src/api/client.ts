@@ -108,6 +108,14 @@ export const apiVoid = async (path: string, init: RequestInit = {}): Promise<voi
   await request(path, init)
 }
 
+/**
+ * Corpo em stream sem parse (SSE). Reusa o `request` comum de proposito: um
+ * 401 no meio da conexao chama o handler de sessao igual a qualquer outra
+ * chamada, em vez de matar o stream em silencio e congelar a tela.
+ */
+export const apiStream = (path: string, init: RequestInit = {}): Promise<Response> =>
+  request(path, init)
+
 export const api = {
   delete: (path: string) => apiVoid(path, { method: 'DELETE' }),
   get: <S extends z.ZodType>(path: string, schema: S) => apiJson(path, schema),

@@ -38,7 +38,7 @@ export function InstanceCard({ instance }: InstanceCardProps) {
 
   const handleOpenLeads = () => {
     selectInstance(instance.id)
-    void navigate({ to: '/leads' })
+    void navigate({ search: { instanceId: instance.id }, to: '/leads' })
   }
 
   // `/connect` decide entre o formulario e o QR a partir da instancia

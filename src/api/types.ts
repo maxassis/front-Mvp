@@ -60,7 +60,11 @@ export const leadSchema = z.object({
   name: z.string().nullable(),
   phone: z.string().nullable(),
   previousLeadId: z.string().nullable(),
-  status: z.enum(LEAD_STATUSES),
+  // O backend ja devolveu status fora de new|assigned|closed e o parse estrito
+  // derrubava a lista inteira (erro "Invalid option" no path [0, status]).
+  // Status desconhecido cai para 'new' para a tela continuar abrindo; quando o
+  // backend fixar o contrato, o valor volta a passar direto.
+  status: z.enum(LEAD_STATUSES).catch('new'),
   updatedAt: z.string()
 })
 
@@ -129,3 +133,20 @@ export const readQrPayload = (body: unknown): QrPayload | null => {
 /** Origem: apps/backend/src/providers/waha/waha-status-map.ts. */
 export const readWahaStatus = (body: unknown): string | null =>
   asNonEmptyString(asRecord(body)?.status)
+
+/**
+ * Origem: contrato congelado do stream GET /api/realtime/events (SSE).
+ * `kind` e fixo no nome do evento do quadro e `messageId` so acompanha o
+ * payload quando ha mensagem nova na conversa.
+ */
+export const conversationChangedSchema = z.object({
+  at: z.string(),
+  conversationId: z.string(),
+  direction: z.enum(['inbound', 'outbound']),
+  id: z.string(),
+  instanceId: z.string(),
+  kind: z.literal('conversation.changed'),
+  messageId: z.string().optional()
+})
+
+export type ConversationChanged = z.infer<typeof conversationChangedSchema>

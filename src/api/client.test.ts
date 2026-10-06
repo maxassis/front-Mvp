@@ -71,8 +71,8 @@ describe('leadSchema', () => {
     expect(leadSchema.parse(valid).name).toBe('Maria Souza')
   })
 
-  it('rejeita status de lead fora da lista do backend', () => {
-    expect(leadSchema.safeParse({ ...valid, status: 'archived' }).success).toBe(false)
+  it('cai para new quando o status veio fora do contrato do backend', () => {
+    expect(leadSchema.parse({ ...valid, status: 'archived' }).status).toBe('new')
   })
 
   it('rejeita lead sem a conversa aninhada', () => {

@@ -2,10 +2,10 @@ import { MessageSquare } from 'lucide-react'
 
 import type { Lead } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { leadDisplayName, leadSubtitle } from '@/features/leads/lead-display'
+import { leadDisplayName, leadIntent } from '@/features/leads/lead-display'
 import { LEAD_FILTER_LABEL, LEAD_FILTERS, leadLifecycle } from '@/features/leads/lead-lifecycle'
 import type { LeadFilter } from '@/features/leads/lead-lifecycle'
 import { cn } from '@/lib/utils'
@@ -36,71 +36,73 @@ export function LeadList({
   selectedLeadId
 }: LeadListProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="shrink-0 p-3">
-        <Tabs
-          onValueChange={(value) => {
-            const next = LEAD_FILTERS.find((option) => option === value)
-            if (next) {
-              onFilterChange(next)
-            }
-          }}
-          value={filter}
-        >
-          {/* Quatro rotulos nao cabem numa linha de 288px; duas colunas mantem cada um
-              clicavel em vez de sobrepor texto sobre texto. */}
-          <TabsList className="grid h-auto w-full grid-cols-2">
-            {LEAD_FILTERS.map((option) => (
-              <TabsTrigger key={option} value={option}>
-                {LEAD_FILTER_LABEL[option]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        {/* Quatro rotulos nao cabem numa linha de 288px. Grade 2x2 com botoes
+            proprios evita a briga de altura do TabsList (h-8 fixo do variant
+            cortava a segunda linha e o card sobrepunha as abas). */}
+        <div className="grid min-w-0 grid-cols-2 gap-1" role="tablist" aria-label="Filtrar leads">
+          {LEAD_FILTERS.map((option) => (
+            <Button
+              key={option}
+              onClick={() => onFilterChange(option)}
+              role="tab"
+              aria-selected={filter === option}
+              size="sm"
+              type="button"
+              variant={filter === option ? 'secondary' : 'ghost'}
+              className="min-w-0"
+            >
+              <span className="truncate">{LEAD_FILTER_LABEL[option]}</span>
+            </Button>
+          ))}
+        </div>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1 border-t">
-        <div className="space-y-1 px-3 pb-3">
-          {isPending ? (
-            <div className="space-y-2">
-              {[0, 1, 2, 3].map((index) => (
-                <Skeleton className="h-16 w-full" key={index} />
-              ))}
-            </div>
-          ) : !leads || leads.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-center">
-              <MessageSquare className="size-8 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Nenhum lead por aqui</p>
-            </div>
-          ) : (
-            leads.map((lead) => {
+      <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-hidden border-t">
+        {isPending ? (
+          <div className="space-y-2 p-3">
+            {[0, 1, 2, 3].map((index) => (
+              <Skeleton className="h-16 w-full" key={index} />
+            ))}
+          </div>
+        ) : !leads || leads.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 px-3 py-12 text-center">
+            <MessageSquare className="size-8 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Nenhum lead por aqui</p>
+          </div>
+        ) : (
+          <div className="pb-3">
+            {leads.map((lead) => {
               const isSelected = lead.id === selectedLeadId
               return (
                 <button
                   aria-current={isSelected}
                   className={cn(
-                    'w-full rounded-lg border p-3 text-left transition-colors hover:bg-muted/60',
-                    isSelected ? 'border-primary bg-muted' : 'border-transparent'
+                    'w-full min-w-0 border-b px-3 py-3 text-left transition-colors hover:bg-muted/60',
+                    isSelected ? 'bg-muted' : 'bg-transparent'
                   )}
                   key={lead.id}
                   onClick={() => onSelect(lead.id)}
                   type="button"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-medium">{leadDisplayName(lead)}</p>
-                    <Badge variant="secondary">{leadLifecycle(lead.status).label}</Badge>
+                    <p className="min-w-0 truncate text-sm font-medium">{leadDisplayName(lead)}</p>
+                    <Badge className="shrink-0" variant="secondary">{leadLifecycle(lead.status).label}</Badge>
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                    {leadSubtitle(lead)}
-                  </p>
+                  {leadIntent(lead) ? (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {leadIntent(lead)}
+                    </p>
+                  ) : null}
                   <p className="mt-1 text-xs text-muted-foreground">
                     {formatUpdatedAt(lead.updatedAt)}
                   </p>
                 </button>
               )
-            })
-          )}
-        </div>
+            })}
+          </div>
+        )}
       </ScrollArea>
     </div>
   )

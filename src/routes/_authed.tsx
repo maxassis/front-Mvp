@@ -6,14 +6,6 @@ import { toast } from 'sonner'
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useSignOut } from '@/features/auth/mutations'
 import { sessionKeys, sessionQuery } from '@/features/auth/queries'
 import { instancesQuery } from '@/features/instances/queries'
@@ -38,7 +30,6 @@ function AuthedLayout() {
 
   const { user } = Route.useRouteContext()
   const instances = useQuery(instancesQuery)
-  const selectedInstanceId = useUiStore((state) => state.selectedInstanceId)
   const selectInstance = useUiStore((state) => state.selectInstance)
 
   // A rota /connect abre o formulario de numero novo so quando nenhuma
@@ -71,27 +62,6 @@ function AuthedLayout() {
           <p className="truncate text-sm font-medium">{user.email}</p>
         </div>
 
-        {instances.isPending ? (
-          <Skeleton className="h-9 w-48" />
-        ) : (
-          <Select
-            onValueChange={(value) => selectInstance(value === 'none' ? null : value)}
-            value={selectedInstanceId ?? 'none'}
-          >
-            <SelectTrigger className="w-56" aria-label="Instancia ativa">
-              <SelectValue placeholder="Selecione a instancia" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Sem instancia</SelectItem>
-              {(instances.data ?? []).map((instance) => (
-                <SelectItem key={instance.id} value={instance.id}>
-                  {instance.instanceName ?? instance.phoneNumber}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-
         <Button onClick={handleConnectNew} size="sm" type="button">
           <Plus /> Conectar numero
         </Button>
@@ -112,7 +82,7 @@ function AuthedLayout() {
         </div>
       ) : null}
 
-      <main className="min-h-0 flex-1">
+      <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <Outlet />
       </main>
     </div>

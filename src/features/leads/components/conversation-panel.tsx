@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { MessageSquare, RefreshCw } from 'lucide-react'
+import { ArrowLeft, MessageSquare, RefreshCw } from 'lucide-react'
 import { useEffect, useMemo, useRef } from 'react'
 
 import type { Lead, LeadMessage } from '@/api/types'
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils'
 interface ConversationPanelProps {
   instanceId: string
   lead: Lead | undefined
+  onBack?: () => void
   onRefreshLeadList: () => void
 }
 
@@ -31,14 +32,16 @@ const STICK_TO_BOTTOM_SLACK_PX = 48
 function MessageBubble({ message }: { message: LeadMessage }) {
   const isOutgoing = message.direction === 'outbound'
   return (
-    <div className={cn('flex', isOutgoing ? 'justify-end' : 'justify-start')}>
+    <div className={cn('flex min-w-0', isOutgoing ? 'justify-end' : 'justify-start')}>
       <div
         className={cn(
-          'max-w-[80%] rounded-lg px-3 py-2',
+          'max-w-[80%] min-w-0 overflow-hidden rounded-lg px-3 py-2',
           isOutgoing ? 'bg-primary text-primary-foreground' : 'bg-muted'
         )}
       >
-        {message.text ? <p className="text-sm whitespace-pre-wrap">{message.text}</p> : null}
+        {message.text ? (
+          <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
+        ) : null}
         <p
           className={cn(
             'mt-1 text-right text-[11px]',
@@ -52,7 +55,7 @@ function MessageBubble({ message }: { message: LeadMessage }) {
   )
 }
 
-export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: ConversationPanelProps) {
+export function ConversationPanel({ instanceId, lead, onBack, onRefreshLeadList }: ConversationPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const assignLead = useAssignLead(instanceId)
   const closeLead = useCloseLead(instanceId)
@@ -71,9 +74,9 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
     }
   }, [lastLeadId])
 
-  // A lista faz poll a cada 5s. Rolar para o fim a cada atualizacao jogaria o
-  // operador de volta para baixo enquanto ele le o historico, entao o scroll so
-  // acontece quando ele ja estava colado no fim.
+  // Sem polling automatico: a lista so recarrega por acao do operador ou
+  // invalidacao apos mutacao. Manter colado no fim so quando ele ja estava
+  // la evita jogar o operador para baixo enquanto ele le o historico.
   useEffect(() => {
     const container = scrollRef.current
     if (!container) {
@@ -105,14 +108,27 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-3 border-b p-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 items-center gap-2 border-b p-3">
+        {onBack ? (
+          <Button
+            aria-label="Voltar para a lista de leads"
+            className="shrink-0 md:hidden"
+            onClick={onBack}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <ArrowLeft />
+          </Button>
+        ) : null}
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium">{leadDisplayName(lead)}</p>
           <p className="truncate text-xs text-muted-foreground">{leadSubtitle(lead)}</p>
         </div>
         {lifecycle.canAssign ? (
           <Button
+            className="shrink-0"
             disabled={assignLead.isPending}
             onClick={() => assignLead.mutate(lead.id)}
             size="sm"
@@ -123,6 +139,7 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
         ) : null}
         {lifecycle.canClose ? (
           <Button
+            className="shrink-0"
             disabled={closeLead.isPending}
             onClick={() => closeLead.mutate(lead.id)}
             size="sm"
@@ -134,6 +151,7 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
         ) : null}
         <Button
           aria-label="Atualizar conversa"
+          className="shrink-0"
           disabled={messages.isFetching}
           onClick={() => void handleRefresh()}
           size="icon"
@@ -144,7 +162,7 @@ export function ConversationPanel({ instanceId, lead, onRefreshLeadList }: Conve
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto" ref={scrollRef}>
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto" ref={scrollRef}>
         <div className="space-y-2 p-3 pb-4">
           {messages.isPending ? (
             <div className="space-y-2">

@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { api, buildUrl } from '@/api/client'
 import type { LeadStatus } from '@/api/types'
 import { leadMessageSchema, leadSchema } from '@/api/types'
-import { CHAT_POLL_INTERVAL_MS } from '@/lib/query-client'
 
 export const leadKeys = {
   all: ['leads'] as const,
@@ -29,8 +28,7 @@ export const leadsQuery = (input: LeadsQueryInput) =>
         }),
         z.array(leadSchema)
       ),
-    queryKey: leadKeys.list(input.instanceId, input.status),
-    refetchInterval: CHAT_POLL_INTERVAL_MS
+    queryKey: leadKeys.list(input.instanceId, input.status)
   })
 
 export const leadMessagesQuery = (leadId: string) =>
@@ -44,6 +42,5 @@ export const leadMessagesQuery = (leadId: string) =>
         buildUrl(`/api/leads/${leadId}/messages`, { include_history: 'true' }),
         z.array(leadMessageSchema)
       ),
-    queryKey: leadKeys.messages(leadId),
-    refetchInterval: CHAT_POLL_INTERVAL_MS
+    queryKey: leadKeys.messages(leadId)
   })
