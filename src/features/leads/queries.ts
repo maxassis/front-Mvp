@@ -9,7 +9,8 @@ export const leadKeys = {
   all: ['leads'] as const,
   list: (instanceId: string, status: LeadStatus | 'all') =>
     [...leadKeys.all, instanceId, status] as const,
-  messages: (leadId: string) => [...leadKeys.all, 'messages', leadId] as const
+  messages: (leadId: string) => [...leadKeys.all, 'messages', leadId] as const,
+  byId: (leadId: string) => [...leadKeys.all, 'by-id', leadId] as const
 }
 
 export interface LeadsQueryInput {
@@ -29,6 +30,13 @@ export const leadsQuery = (input: LeadsQueryInput) =>
         z.array(leadSchema)
       ),
     queryKey: leadKeys.list(input.instanceId, input.status)
+  })
+
+export const leadByIdQuery = (leadId: string) =>
+  queryOptions({
+    enabled: Boolean(leadId),
+    queryFn: () => api.get(`/api/leads/${leadId}`, leadSchema),
+    queryKey: leadKeys.byId(leadId)
   })
 
 export const leadMessagesQuery = (leadId: string) =>

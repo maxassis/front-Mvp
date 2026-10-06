@@ -1,15 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { Building2 } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { z } from 'zod'
 
-import type { Lead } from '@/api/types'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ConversationPanel } from '@/features/leads/components/conversation-panel'
 import { LeadList } from '@/features/leads/components/lead-list'
-import { leadsQuery } from '@/features/leads/queries'
+import { leadByIdQuery, leadsQuery } from '@/features/leads/queries'
 import type { LeadFilter } from '@/features/leads/lead-lifecycle'
 import { useLeadsRealtime } from '@/features/leads/use-leads-realtime'
 import { useUiStore } from '@/stores/ui-store'
@@ -35,7 +34,6 @@ function LeadsPage() {
   const instanceId = searchInstanceId ?? selectedInstanceId
   const selectedLeadId = searchLeadId ?? null
   const [filter, setFilter] = useState<LeadFilter>('all')
-  const lastKnownLead = useRef<Lead | undefined>(undefined)
 
   // Replace para nao poluir o Voltar do browser a cada lead aberto.
   const selectLead = (leadId: string | null) =>
@@ -46,20 +44,14 @@ function LeadsPage() {
   useLeadsRealtime()
 
   const leads = useQuery(leadsQuery({ instanceId: instanceId ?? '', status: filter }))
+  const openLead = useQuery(leadByIdQuery(selectedLeadId ?? ''))
 
-  // Assumir tira o lead da aba "Pendentes", entao a lista recarregada sem ele e a
-  // conversa fecharia na mao do operador logo depois de ele abrir o composer.
-  // A ultima versao conhecida do lead, segurada em ref, mantem a conversa aberta
-  // enquanto o lead nao esta mais na lista.
+  // O painel le o lead que exibe, nao a lista filtrada. Quando o status muda
+  // sozinho (soltura por ociosidade, outro operador), o lead some da aba atual
+  // e a leitura por id continua devolvendo ele, ja com o estado novo. A lista
+  // serve so para abrir rapido na primeira vez, antes do fetch resolver.
   const freshLead = (leads.data ?? []).find((lead) => lead.id === selectedLeadId)
-
-  if (freshLead) {
-    lastKnownLead.current = freshLead
-  } else if (!selectedLeadId) {
-    lastKnownLead.current = undefined
-  }
-
-  const selectedLead = freshLead ?? lastKnownLead.current
+  const selectedLead = openLead.data ?? freshLead
 
   if (!instanceId) {
     return (

@@ -60,11 +60,7 @@ export const leadSchema = z.object({
   name: z.string().nullable(),
   phone: z.string().nullable(),
   previousLeadId: z.string().nullable(),
-  // O backend ja devolveu status fora de new|assigned|closed e o parse estrito
-  // derrubava a lista inteira (erro "Invalid option" no path [0, status]).
-  // Status desconhecido cai para 'new' para a tela continuar abrindo; quando o
-  // backend fixar o contrato, o valor volta a passar direto.
-  status: z.enum(LEAD_STATUSES).catch('new'),
+  status: z.enum(LEAD_STATUSES),
   updatedAt: z.string()
 })
 
