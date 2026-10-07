@@ -63,3 +63,7 @@ bun run verify-leads <email> <senha>
 **Ações por estado de lead saem de `LEAD_LIFECYCLE`.** Não rederive `canAssign`, `canClose` ou `canSendMessage` com condicionais na tela.
 
 **Criação de instância manda `agenda_enabled: false`.** O backend recusa `true` na criação; a agenda só liga depois do onboarding.
+
+**Catálogo de onboarding é frontend e trava por teste.** O backend não expõe as perguntas, então as 51 chaves de `src/features/onboarding/catalog.ts` têm que acompanhar `BEHAVIORAL_FIELD_KEYS`; `catalog.test.ts` quebra se divergir. Não copie `human_handoff` nem `handoff_information` da referência, o backend recusa com 400.
+
+**Upload é presign, PUT direto e confirm.** O PUT vai ao Supabase com `fetch` fora de `src/api/client.ts` porque o destino não é a API. A lista recarrega por `refetchInterval` condicional, nunca `setInterval` em componente.

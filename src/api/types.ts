@@ -146,3 +146,84 @@ export const conversationChangedSchema = z.object({
 })
 
 export type ConversationChanged = z.infer<typeof conversationChangedSchema>
+
+/**
+ * Origem: apps/backend/src/modules/onboarding/onboarding.schema.ts (pedido)
+ * e onboarding.service.ts (resposta = linha crua do Drizzle, sem serializer).
+ *
+ * O pedido vai em snake_case e a resposta volta em camelCase. O GET devolve
+ * array solto, o POST 201 com um item, o PATCH 200 com um item e o DELETE
+ * 204 sem corpo.
+ */
+export const onboardingItemSchema = z.object({
+  answer: z.string().nullable(),
+  answerJson: z.unknown().nullable(),
+  createdAt: z.string(),
+  enabled: z.boolean(),
+  fieldKey: z.string(),
+  id: z.string(),
+  question: z.string(),
+  required: z.boolean(),
+  sortOrder: z.number(),
+  updatedAt: z.string(),
+  userId: z.string(),
+  whatsappInstanceId: z.string()
+})
+
+export type OnboardingItem = z.infer<typeof onboardingItemSchema>
+
+export const onboardingItemListSchema = z.array(onboardingItemSchema)
+
+/**
+ * Origem: apps/backend/src/modules/rag/rag.routes.ts (rotas) e
+ * rag-files.service.ts (select explicito e constantes de validacao).
+ *
+ * Aqui o casing inverte em relacao ao onboarding: pedido e query usam
+ * camelCase (`instanceId`) e a resposta volta em snake_case. `upload_status`
+ * e varchar sem enum no banco, entao o campo parseia como string e os
+ * valores conhecidos moram em UPLOAD_STATUSES para rotulo e poll, sem
+ * derrubar a tela se o backend ganhar um status novo.
+ */
+export const UPLOAD_STATUSES = [
+  'failed',
+  'pending-upload',
+  'processing',
+  'queued',
+  'ready'
+] as const
+export type UploadStatus = (typeof UPLOAD_STATUSES)[number]
+
+export const ragFileSchema = z.object({
+  chunks_count: z.number(),
+  created_at: z.string(),
+  id: z.string(),
+  indexed_at: z.string().nullable(),
+  mime_type: z.string().nullable(),
+  name: z.string(),
+  size_bytes: z.number().nullable(),
+  storage_path: z.string(),
+  upload_batch_id: z.string().nullable(),
+  upload_error: z.string().nullable(),
+  upload_status: z.string()
+})
+
+export type RagFile = z.infer<typeof ragFileSchema>
+
+/** O GET /api/files devolve envelope, nao array solto. */
+export const fileListSchema = z.object({ files: z.array(ragFileSchema) })
+
+export const presignedFileSchema = z.object({
+  file_id: z.string(),
+  signed_url: z.string(),
+  storage_path: z.string(),
+  token: z.string()
+})
+
+export const presignResponseSchema = z.object({
+  batch_id: z.string(),
+  files: z.array(presignedFileSchema)
+})
+
+export const confirmUploadResponseSchema = z.object({ status: z.string() })
+
+export const deleteFileResponseSchema = z.object({ success: z.literal(true) })

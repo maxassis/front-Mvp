@@ -2,7 +2,18 @@ import { afterAll, describe, expect, it } from 'bun:test'
 import { z } from 'zod'
 
 import { ApiError, apiJson, buildUrl } from './client'
-import { leadSchema, readQrPayload, readWahaStatus } from './types'
+import {
+  confirmUploadResponseSchema,
+  deleteFileResponseSchema,
+  fileListSchema,
+  leadSchema,
+  onboardingItemListSchema,
+  onboardingItemSchema,
+  presignResponseSchema,
+  ragFileSchema,
+  readQrPayload,
+  readWahaStatus
+} from './types'
 
 describe('ApiError', () => {
   it('junta as mensagens de validacao em uma so string', () => {
@@ -172,5 +183,92 @@ describe('apiJson', () => {
       expect(apiError.status).toBe(400)
       expect(apiError.message).toBe('a b')
     }
+  })
+})
+
+describe('onboardingItemSchema', () => {
+  const valid = {
+    answer: 'Atender com proximidade',
+    answerJson: null,
+    createdAt: '2026-01-01T00:00:00Z',
+    enabled: true,
+    fieldKey: 'assistant_persona',
+    id: 'item-1',
+    question: 'Quem e o assistente?',
+    required: true,
+    sortOrder: 10,
+    updatedAt: '2026-01-02T00:00:00Z',
+    userId: 'user-1',
+    whatsappInstanceId: 'inst-1'
+  }
+
+  it('aceita a linha em camelCase com resposta nula', () => {
+    expect(onboardingItemSchema.parse({ ...valid, answer: null }).answer).toBeNull()
+  })
+
+  it('a lista e array solto, nao envelope', () => {
+    expect(onboardingItemListSchema.parse([valid])).toHaveLength(1)
+    expect(onboardingItemListSchema.safeParse({ items: [valid] }).success).toBe(false)
+  })
+})
+
+describe('ragFileSchema', () => {
+  const valid = {
+    chunks_count: 4,
+    created_at: '2026-01-01T00:00:00Z',
+    id: 'file-1',
+    indexed_at: null,
+    mime_type: 'application/pdf',
+    name: 'cardapio.pdf',
+    size_bytes: 1024,
+    storage_path: 'user-1/inst-1/cardapio.pdf',
+    upload_batch_id: null,
+    upload_error: null,
+    upload_status: 'ready'
+  }
+
+  it('aceita a linha em snake_case', () => {
+    expect(ragFileSchema.parse(valid).name).toBe('cardapio.pdf')
+  })
+
+  it('tolera status que ainda nao existe no cliente', () => {
+    expect(ragFileSchema.parse({ ...valid, upload_status: 'quarantined' }).upload_status).toBe(
+      'quarantined'
+    )
+  })
+
+  it('a lista exige o envelope files e rejeita array solto', () => {
+    expect(fileListSchema.parse({ files: [valid] }).files).toHaveLength(1)
+    expect(fileListSchema.safeParse([valid]).success).toBe(false)
+  })
+})
+
+describe('presignResponseSchema', () => {
+  it('aceita o lote com um arquivo assinado', () => {
+    const parsed = presignResponseSchema.parse({
+      batch_id: 'batch-1',
+      files: [
+        {
+          file_id: 'file-1',
+          signed_url: 'https://storage/put',
+          storage_path: 'user-1/inst-1/a.pdf',
+          token: 'tok'
+        }
+      ]
+    })
+    expect(parsed.files[0]?.file_id).toBe('file-1')
+  })
+})
+
+describe('confirmUploadResponseSchema', () => {
+  it('aceita o status devolvido pelo confirm', () => {
+    expect(confirmUploadResponseSchema.parse({ status: 'queued' }).status).toBe('queued')
+  })
+})
+
+describe('deleteFileResponseSchema', () => {
+  it('so aceita success true', () => {
+    expect(deleteFileResponseSchema.parse({ success: true }).success).toBe(true)
+    expect(deleteFileResponseSchema.safeParse({ success: false }).success).toBe(false)
   })
 })

@@ -233,14 +233,158 @@ const main = async () => {
     const secondBody = await secondCreated.json()
     secondId = secondBody.id
 
-    const leadsResponse = await page.goto(`${APP_URL}/leads`, { waitUntil: 'networkidle' })
+    // O /leads mantem o stream SSE aberto, entao networkidle nunca assenta com
+    // o backend no ar. domcontentloaded basta porque o seeText espera o texto.
+    const leadsResponse = await page.goto(`${APP_URL}/leads`, { waitUntil: 'domcontentloaded' })
     check('rota /leads responde', leadsResponse?.status() === 200, String(leadsResponse?.status()))
     await seeText(page, 'Nenhuma instancia selecionada', '/leads pede selecao de instancia')
 
     await page.goto(APP_URL, { waitUntil: 'networkidle' })
     await page.getByRole('button', { name: 'Leads' }).first().click()
-    await page.waitForURL('**/leads')
+    // O card navega com ?instanceId, que o glob nao casa.
+    await page.waitForURL(url => url.pathname === '/leads', { timeout: 15_000 })
     await seeText(page, 'Nenhum lead por aqui', 'lista de leads vazia aparece')
+
+    // Onboarding e arquivos vivem em rotas proprias com a instancia na URL.
+    // O glob nao casa query string, entao a espera usa predicado.
+    await page.goto(APP_URL, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Onboarding' }).first().click()
+    await page.waitForURL(
+      url => url.pathname === '/onboarding' && url.searchParams.has('instanceId'),
+      { timeout: 15_000 }
+    )
+    check('card abre onboarding com instanceId', true)
+
+    await page.goto(`${APP_URL}/onboarding?instanceId=${instanceId}`, { waitUntil: 'networkidle' })
+    await seeText(page, 'Perguntas obrigatorias pendentes', 'painel de obrigatorias aparece')
+
+    const requiredAnswers = [
+      { answer: 'Agendar consultas', label: 'Objetivo do chatbot' },
+      { answer: 'Perguntar nome e servico', label: 'Fluxo de qualificacao' },
+      { answer: 'Atendente proxima', label: 'Persona do assistente' },
+      { answer: 'Profissional', label: 'Tom de voz' },
+      { answer: 'Dizer que nao sabe', label: 'Informacao desconhecida' }
+    ]
+    for (const { answer, label } of requiredAnswers) {
+      await page.getByRole('button', { name: label }).click()
+      if (label === 'Tom de voz') {
+        await page.locator('#onboarding-answer').click()
+        await page.getByRole('option', { name: answer }).click()
+      } else {
+        await page.getByLabel('Resposta').fill(answer)
+      }
+      const savedItem = page.waitForResponse(
+        res => res.url().includes('/api/onboarding/items') && res.request().method() === 'POST',
+        { timeout: 20_000 }
+      )
+      await page.getByRole('button', { name: 'Salvar pergunta' }).click()
+      await savedItem
+    }
+    await seeText(page, 'Buscar no catalogo', 'picker libera apos as obrigatorias')
+
+    await page.locator('#onboarding-question').click()
+    await page.getByRole('option', { name: 'Uso de emojis' }).click()
+    await page.getByLabel('Resposta').fill('Evitar em excesso')
+    const savedOptional = page.waitForResponse(
+      res => res.url().includes('/api/onboarding/items') && res.request().method() === 'POST',
+      { timeout: 20_000 }
+    )
+    await page.getByRole('button', { name: 'Salvar pergunta' }).click()
+    await savedOptional
+    await seeText(page, 'emoji_policy', 'opcional salva aparece na lista')
+
+    const toggled = page.waitForResponse(
+      res => res.url().includes('/api/onboarding/items/') && res.request().method() === 'PATCH',
+      { timeout: 20_000 }
+    )
+    await page.getByRole('switch', { name: 'Desativar emoji_policy' }).click()
+    await toggled
+    await seeText(page, 'Inativa', 'toggle desliga a pergunta')
+
+    await page.getByRole('button', { name: 'Remover' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Remover', exact: true }).click()
+    await page.waitForResponse(
+      res => res.url().includes('/api/onboarding/items/') && res.request().method() === 'DELETE',
+      { timeout: 20_000 }
+    ).catch(() => null)
+    let removedQuestion = false
+    try {
+      // waitFor com detached estoura em strict mode quando linha e titulo do
+      // dialogo coexistem; a funcao espera o texto sumir de verdade.
+      await page.waitForFunction(
+        () => !document.body.innerText.includes('emoji_policy'),
+        { timeout: 15_000 }
+      )
+      removedQuestion = true
+    } catch {
+      removedQuestion = false
+    }
+    const deleteDebug = `dialog=${await page.getByRole('dialog').count()} linhas=${await page.getByText('emoji_policy').count()} toast=${await page.locator('[data-sonner-toast]').count()}`
+    check('remocao tira a pergunta da tela', removedQuestion, deleteDebug)
+
+    await page.goto(APP_URL, { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: 'Arquivos' }).first().click()
+    await page.waitForURL(
+      url => url.pathname === '/files' && url.searchParams.has('instanceId'),
+      { timeout: 15_000 }
+    )
+    check('card abre arquivos com instanceId', true)
+
+    await page.goto(`${APP_URL}/files?instanceId=${instanceId}`, { waitUntil: 'networkidle' })
+    await seeText(page, 'Nenhum arquivo enviado ainda', 'estado vazio de arquivos aparece')
+
+    // setInputFiles aceita buffer: sem fixture em disco para o txt de prova.
+    await page.locator('#files-picker').setInputFiles([{
+      buffer: Buffer.from('Politica de troca: 30 dias com nota fiscal.'),
+      mimeType: 'text/plain',
+      name: 'politica.txt'
+    }])
+    await seeText(page, '1 arquivo(s) selecionado(s)', 'selecao lista o arquivo')
+
+    const presigned = page.waitForResponse(
+      res => res.url().includes('/api/files/presign') && res.request().method() === 'POST',
+      { timeout: 20_000 }
+    )
+    await page.getByRole('button', { name: 'Enviar arquivos' }).click()
+    await presigned
+    check('presign do lote e chamado', true)
+
+    // Sucesso limpa a selecao (onSuccess); falha mantem para retry e mostra
+    // toast. Com o storage fora do ar o backend responde 502 e cai no toast;
+    // com storage saudavel a selecao some e a linha do arquivo aparece.
+    // A espera e pelo botao assentado: ele volta a dizer Enviar quando a
+    // mutacao termina, e o toast da falha ainda esta visivel nesse instante.
+    await page.getByRole('button', { name: 'Enviar arquivos' }).waitFor({ timeout: 30_000 })
+    const uploaded = (await page.getByText('1 arquivo(s) selecionado(s)').count()) === 0
+
+    if (uploaded) {
+      await page.getByText('politica.txt').waitFor({ timeout: 15_000 })
+      check('linha do arquivo aparece na lista', true)
+      const row = page.locator('div.flex.items-start').filter({ hasText: 'politica.txt' })
+      await row.getByRole('button', { name: 'Remover' }).click()
+      await page.getByRole('dialog').getByRole('button', { name: 'Remover', exact: true }).click()
+      await page.waitForResponse(
+        res => res.url().match(/\/api\/files\/[^/]+$/) && res.request().method() === 'DELETE',
+        { timeout: 20_000 }
+      ).catch(() => null)
+      let removedFile = false
+      try {
+        await page.getByText('politica.txt').waitFor({ state: 'detached', timeout: 15_000 })
+        removedFile = true
+      } catch {
+        removedFile = false
+      }
+      check('remocao tira o arquivo da tela', removedFile)
+    } else {
+      let toastShown = false
+      try {
+        await page.locator('[data-sonner-toast]').first().waitFor({ timeout: 5_000 })
+        toastShown = true
+      } catch {
+        toastShown = false
+      }
+      check('falha do envio aparece em toast', toastShown)
+    }
 
     await page.getByRole('button', { name: 'Sair' }).click()
     await page.waitForURL('**/login', { timeout: 15_000 })

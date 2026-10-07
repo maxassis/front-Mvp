@@ -41,6 +41,16 @@ export function InstanceCard({ instance }: InstanceCardProps) {
     void navigate({ search: { instanceId: instance.id }, to: '/leads' })
   }
 
+  const handleOpenOnboarding = () => {
+    selectInstance(instance.id)
+    void navigate({ search: { instanceId: instance.id }, to: '/onboarding' })
+  }
+
+  const handleOpenFiles = () => {
+    selectInstance(instance.id)
+    void navigate({ search: { instanceId: instance.id }, to: '/files' })
+  }
+
   // `/connect` decide entre o formulario e o QR a partir da instancia
   // selecionada, entao conectar tem que selecionar antes de navegar.
   const handleConnect = () => {
@@ -84,6 +94,12 @@ export function InstanceCard({ instance }: InstanceCardProps) {
         )}
         <Button onClick={handleOpenLeads} size="sm" type="button" variant="outline">
           <MessageSquare /> Leads
+        </Button>
+        <Button onClick={handleOpenOnboarding} size="sm" type="button" variant="outline">
+          Onboarding
+        </Button>
+        <Button onClick={handleOpenFiles} size="sm" type="button" variant="outline">
+          Arquivos
         </Button>
         {instance.provider === 'waha' && instance.status !== 'disconnected' ? (
           <Button
