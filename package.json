@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "check": "bun run lint && bun run typecheck",
     "verify:app": "bun scripts/verify-app.ts",
+    "verify:google": "bun scripts/verify-google-sign-in.ts",
     "seed:leads": "bun scripts/seed-leads.ts",
     "verify:leads": "bun scripts/verify-leads.ts",
     "test": "bun test"

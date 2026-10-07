@@ -23,6 +23,7 @@ Variavel de ambiente: copie `.env.example` para `.env` se a API nao estiver em `
 | `bun run lint` | oxlint |
 | `bun run check` | lint e typecheck juntos, é o que roda antes de commit |
 | `bun run verify:app` | Percorre o fluxo inteiro num Chromium de verdade contra o backend de verdade |
+| `bun run verify:google` | Prova a fatia do login com Google no app de verdade, sem passar pelo Google |
 | `bun run seed:leads` | Cria instância, conversa, lead e mensagens direto no banco |
 
 `routeTree.gen.ts` é gerado pelo plugin do TanStack Router e está no `.gitignore`. O `tsc` roda depois do `tsr generate` porque o build precisa da árvore de rotas antes de tipar.
@@ -34,6 +35,8 @@ bun run verify:app
 ```
 
 Exige o backend em `:3000`, o app em `:4174` e o smtp4dev em `:5080` para o cadastro com OTP. Cria uma conta nova a cada execução, então o `phone_number` precisa ser único (o backend tem índice único global nessa coluna).
+
+O login com Google em si não é automatizável. A ida e volta real exige uma conta Google e o consentimento no navegador, que não existe dentro do Chromium de script. O que dá para provar está em `verify:google`, que vai até a tela de consentimento do Google e de volta. A volta completa fica como conferência manual, uma vez por ambiente.
 
 Para a tela de leads, que depende de dados que só nascem pelo webhook do WhatsApp:
 

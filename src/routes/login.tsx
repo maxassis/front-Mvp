@@ -8,10 +8,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { GoogleSignIn } from '@/features/auth/components/google-sign-in'
 import { useSignIn } from '@/features/auth/mutations'
 import { sessionQuery } from '@/features/auth/queries'
 
+const CALLBACK_ERROR_MESSAGE: Record<string, string> = {
+  PROVIDER_NOT_FOUND: 'Login com Google nao esta configurado neste ambiente.',
+  account_not_linked:
+    'Este e-mail ja tem conta criada com senha e o Google nao esta vinculado. Entre com e-mail e senha.',
+  invalid_code: 'O Google devolveu um codigo de acesso invalido. Tente entrar de novo.',
+  state_invalid: 'A tentativa de login com Google expirou. Tente entrar de novo.',
+  state_mismatch: 'A tentativa de login com Google nao confere. Tente entrar de novo.',
+  state_security_mismatch: 'A tentativa de login com Google nao confere. Tente entrar de novo.'
+}
+
+const CALLBACK_ERROR_FALLBACK =
+  'Nao foi possivel completar a entrada com Google. Tente de novo.'
+
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): { error?: string | null } => ({
+    error: typeof search.error === 'string' ? search.error : null
+  }),
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData(sessionQuery)
     if (session) {
@@ -22,6 +39,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  const { error: callbackError } = Route.useSearch()
   const navigate = useNavigate()
   const signIn = useSignIn()
   const [email, setEmail] = useState('')
@@ -51,6 +69,14 @@ function LoginPage() {
         }
         title="Entrar"
       >
+        {callbackError ? (
+          <Alert className="mb-4" variant="destructive">
+            <AlertDescription>
+              {CALLBACK_ERROR_MESSAGE[callbackError] ?? CALLBACK_ERROR_FALLBACK}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="login-email">Email</Label>
@@ -87,6 +113,8 @@ function LoginPage() {
             {signIn.isPending ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
+
+        <GoogleSignIn />
       </AuthCard>
     </AuthShell>
   )

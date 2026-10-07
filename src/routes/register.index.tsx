@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { GoogleSignIn } from '@/features/auth/components/google-sign-in'
 import { useSignUp } from '@/features/auth/mutations'
 import { setPendingPassword } from '@/features/auth/sign-in-credentials'
 
@@ -92,6 +93,8 @@ function RegisterPage() {
             {signUp.isPending ? 'Criando...' : 'Cadastrar'}
           </Button>
         </form>
+
+        <GoogleSignIn />
       </AuthCard>
     </AuthShell>
   )

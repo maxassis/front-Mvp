@@ -31,7 +31,7 @@ try {
   await page.goto(`${APP_URL}/login`, { waitUntil: 'networkidle' })
   await page.getByLabel('Email').fill(EMAIL)
   await page.getByLabel('Senha').fill(PASSWORD)
-  await page.getByRole('button', { name: 'Entrar' }).click()
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
   await page.waitForURL(`${APP_URL}/`, { timeout: 15_000 })
 
   await page.getByRole('button', { name: 'Leads' }).first().click()

@@ -39,6 +39,43 @@ export const useSignIn = () => {
   })
 }
 
+const GOOGLE_ERROR_MESSAGE: Record<string, string> = {
+  INVALID_CALLBACK_URL:
+    'O servidor recusou a URL de retorno do login. Tente de novo a partir da tela de entrada.',
+  INVALID_ORIGIN:
+    'O servidor recusou a origem desta pagina. Tente de novo a partir da tela de entrada.',
+  PROVIDER_NOT_FOUND: 'Login com Google nao esta configurado neste ambiente.'
+}
+
+const GOOGLE_ERROR_FALLBACK =
+  'Nao foi possivel iniciar a entrada com Google. Tente de novo.'
+
+export const useSignInWithGoogle = () =>
+  useMutation({
+    mutationFn: async (): Promise<void> => {
+      const origin = window.location.origin
+      const { data, error } = await authClient.signIn.social({
+        callbackURL: `${origin}/`,
+        errorCallbackURL: `${origin}/login`,
+        provider: 'google'
+      })
+
+      if (error) {
+        const mapped = error.code ? GOOGLE_ERROR_MESSAGE[error.code] : undefined
+        throw new Error(mapped ?? GOOGLE_ERROR_FALLBACK)
+      }
+
+      if (!data?.url) {
+        throw new Error(GOOGLE_ERROR_FALLBACK)
+      }
+
+      // Ao contrario do useSignIn acima, nao ha getSession + setQueryData: o
+      // hand-off social tira a pagina inteira daqui pelo redirect padrao do
+      // better-auth, entao nao existe cache a preencher e o guard de rota rele
+      // a sessao quando o usuario volta.
+    }
+  })
+
 export interface SignUpInput extends SignInInput {
   name: string
 }
