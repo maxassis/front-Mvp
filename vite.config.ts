@@ -18,6 +18,13 @@ export default defineConfig({
     }
   },
   server: {
-    port: 4174
+    // Prende o dev no loopback IPv4: sem `host` o Vite escuta so em `::1`,
+    // e navegador que resolve `localhost` para `127.0.0.1` recebe
+    // ERR_CONNECTION_REFUSED no reload. `strictPort` impede a migracao
+    // silenciosa para outra porta, que quebraria o CORS do backend,
+    // travado na 4174.
+    host: '127.0.0.1',
+    port: 4174,
+    strictPort: true
   }
 })
