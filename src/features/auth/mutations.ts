@@ -137,8 +137,10 @@ export const useSignOut = () => {
     mutationFn: async () => {
       await authClient.signOut()
       // Zera antes de navegar para o guard nao ler uma sessao morta do cache.
+      // O descarte do restante do cache fica para a rota, apos o _authed
+      // desmontar: invalidar/limpar aqui refaria o fetch de queries ainda
+      // observadas, batendo na API sem cookie.
       queryClient.setQueryData(sessionKeys.all, null)
-      await queryClient.invalidateQueries()
     }
   })
 }

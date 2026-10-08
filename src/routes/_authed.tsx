@@ -44,11 +44,13 @@ function AuthedLayout() {
     try {
       await signOut.mutateAsync()
       await router.navigate({ to: '/login' })
+      queryClient.clear()
     } catch {
       // Sessao morta e cookie residual: zera o cache local para o guard nao
       // devolver a sessao velha e travar o usuario nesta tela.
       queryClient.setQueryData(sessionKeys.all, null)
       await router.navigate({ to: '/login' })
+      queryClient.clear()
       toast.error('Nao foi possivel encerrar a sessao no servidor, mas voce saiu localmente.')
     } finally {
       setIsSigningOut(false)
