@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { api } from '@/api/client'
@@ -8,6 +9,18 @@ import { leadKeys } from '@/features/leads/queries'
 const notifyError = (error: unknown): void => {
   toast.error(error instanceof Error ? error.message : 'Operacao falhou')
 }
+
+/** Recarrega tudo que mostra um lead: as abas da instancia e as mensagens. */
+export const invalidateLeadCaches = (
+  queryClient: QueryClient,
+  instanceId: string,
+  leadId: string
+): Promise<void> =>
+  // O prefixo cobre todas as abas de status da instancia atual.
+  Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...leadKeys.all, instanceId] }),
+    queryClient.invalidateQueries({ queryKey: leadKeys.messages(leadId) })
+  ]).then(() => undefined)
 
 export interface SendLeadMessageInput {
   leadId: string
