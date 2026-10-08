@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { GoogleSignIn } from '@/features/auth/components/google-sign-in'
+import { validateLoginSearch } from '@/features/auth/login-search'
 import { useSignIn } from '@/features/auth/mutations'
 import { sessionQuery } from '@/features/auth/queries'
 
@@ -26,9 +27,7 @@ const CALLBACK_ERROR_FALLBACK =
   'Nao foi possivel completar a entrada com Google. Tente de novo.'
 
 export const Route = createFileRoute('/login')({
-  validateSearch: (search: Record<string, unknown>): { error?: string | null } => ({
-    error: typeof search.error === 'string' ? search.error : null
-  }),
+  validateSearch: validateLoginSearch,
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData(sessionQuery)
     if (session) {
