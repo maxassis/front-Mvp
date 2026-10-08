@@ -52,7 +52,7 @@ const toApiError = (status: number, body: unknown): ApiError => {
   })
 }
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://teste.maxdev.sbs'
 
 /**
  * Chamado quando a API responde 401 fora do fluxo de sessao. O guard de rota so
