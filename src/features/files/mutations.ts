@@ -71,6 +71,9 @@ export const useRemoveFile = (instanceId: string) => {
     mutationFn: (fileId: string) =>
       apiJson(`/api/files/${fileId}`, deleteFileResponseSchema, { method: 'DELETE' }),
     onError: notifyError,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: fileKeys.list(instanceId) })
+    // A lista recarrega em qualquer desfecho: se a rede falhar depois de o
+    // backend apagar, a tela reflete a verdade do servidor em vez de manter
+    // o arquivo visivel como se nada tivesse acontecido.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: fileKeys.list(instanceId) })
   })
 }

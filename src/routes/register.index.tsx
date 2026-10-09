@@ -10,10 +10,20 @@ import { Label } from '@/components/ui/label'
 import { GoogleSignIn } from '@/features/auth/components/google-sign-in'
 import { useSignUp } from '@/features/auth/mutations'
 import { setPendingPassword } from '@/features/auth/sign-in-credentials'
+import { parsePlanSearch } from '@/features/billing/plano-search'
 
-export const Route = createFileRoute('/register/')({ component: RegisterPage })
+export const Route = createFileRoute('/register/')({
+  component: RegisterPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    // Chave omitida quando ausente: devolver `plan: undefined` faria o
+    // Transitioner reescrever a URL com `?plan=undefined` no mount.
+    const { plan } = parsePlanSearch(search)
+    return plan ? { plan } : {}
+  }
+})
 
 function RegisterPage() {
+  const { plan } = Route.useSearch()
   const navigate = useNavigate()
   const signUp = useSignUp()
   const [name, setName] = useState('')
@@ -25,7 +35,10 @@ function RegisterPage() {
     try {
       await signUp.mutateAsync({ email, name, password })
       setPendingPassword(password)
-      await navigate({ to: '/register/verify', search: { email } })
+      await navigate({
+        to: '/register/verify',
+        search: { email, ...(plan ? { plan } : {}) }
+      })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Falha ao cadastrar')
     }
@@ -94,7 +107,7 @@ function RegisterPage() {
           </Button>
         </form>
 
-        <GoogleSignIn />
+        <GoogleSignIn plan={plan} />
       </AuthCard>
     </AuthShell>
   )

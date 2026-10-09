@@ -33,7 +33,26 @@ export const useCreateOnboardingItem = (instanceId: string) => {
         whatsapp_instance_id: instanceId
       }),
     onError: notifyError,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
+    onSettled: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
+  })
+}
+
+export interface UpdateOnboardingItemInput {
+  answer: string
+  itemId: string
+}
+
+/** Edita só a resposta. A pergunta vem do catálogo e não muda por aqui. */
+export const useUpdateOnboardingItem = (instanceId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: UpdateOnboardingItemInput) =>
+      api.patch(`/api/onboarding/items/${input.itemId}`, onboardingItemSchema, {
+        answer: input.answer
+      }),
+    onError: notifyError,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
   })
 }
 
@@ -52,7 +71,7 @@ export const useToggleOnboardingItem = (instanceId: string) => {
         enabled: input.enabled
       }),
     onError: notifyError,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
+    onSettled: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
   })
 }
 
@@ -63,6 +82,6 @@ export const useRemoveOnboardingItem = (instanceId: string) => {
   return useMutation({
     mutationFn: (itemId: string) => api.delete(`/api/onboarding/items/${itemId}`),
     onError: notifyError,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
+    onSettled: () => queryClient.invalidateQueries({ queryKey: onboardingKeys.items(instanceId) })
   })
 }

@@ -18,9 +18,33 @@ export type InstanceStatus = (typeof INSTANCE_STATUSES)[number]
 export const WHATSAPP_PROVIDERS = ['waha', 'whatsapp_cloud_api'] as const
 export type WhatsappProvider = (typeof WHATSAPP_PROVIDERS)[number]
 
+/** Origem: apps/backend/src/modules/whatsapp/whatsapp-instances.schema.ts. */
+export const BUSINESS_TYPES = [
+  'saude',
+  'beleza',
+  'alimentacao',
+  'comercio',
+  'servicos',
+  'educacao',
+  'outros'
+] as const
+export type BusinessType = (typeof BUSINESS_TYPES)[number]
+
+export const BUSINESS_TYPE_LABELS = {
+  alimentacao: 'Alimentação',
+  beleza: 'Beleza',
+  comercio: 'Comércio',
+  educacao: 'Educação',
+  outros: 'Outros',
+  saude: 'Saúde',
+  servicos: 'Serviços'
+} as const satisfies Record<BusinessType, string>
+
 /** Origem: apps/backend/src/database/schema.ts, tabela whatsapp_instances. */
 export const whatsappInstanceSchema = z.object({
   agendaEnabled: z.boolean(),
+  businessType: z.enum(BUSINESS_TYPES).nullable(),
+  businessTypeLabel: z.string().nullable(),
   chatbotEnabled: z.boolean(),
   createdAt: z.string(),
   id: z.string(),
@@ -227,3 +251,42 @@ export const presignResponseSchema = z.object({
 export const confirmUploadResponseSchema = z.object({ status: z.string() })
 
 export const deleteFileResponseSchema = z.object({ success: z.literal(true) })
+
+/**
+ * Origem: apps/backend/src/database/schema.ts, tabela plans, exposta por
+ * GET /api/billing/plans (rota publica). A resposta e o array cru, sem
+ * envelope, e `stripePriceId` nulo marca o plano gratuito: e o unico sinal
+ * estrutural que separa pago de free, entao o tipo `PaidPlan` depende dele.
+ */
+export const billingPlanSchema = z.object({
+  createdAt: z.string(),
+  id: z.string(),
+  monthlyMessageLimit: z.number(),
+  name: z.string(),
+  slug: z.string(),
+  stripeAnnualPriceId: z.string().nullable(),
+  stripeMeteredPriceId: z.string().nullable(),
+  stripePriceId: z.string().nullable(),
+  trialDays: z.number(),
+  updatedAt: z.string()
+})
+
+export type BillingPlan = z.infer<typeof billingPlanSchema>
+
+export const billingPlanListSchema = z.array(billingPlanSchema)
+
+/**
+ * Origem: apps/backend/src/modules/billing/billing.service.ts (MonthlyUsage),
+ * exposta por GET /api/billing/usage (autenticada). `planSlug` nulo e o usuario
+ * sem assinatura caindo no limite default do backend.
+ */
+export const billingUsageSchema = z.object({
+  limit: z.number(),
+  periodEnd: z.string(),
+  periodStart: z.string(),
+  planSlug: z.string().nullable(),
+  remaining: z.number(),
+  used: z.number()
+})
+
+export type BillingUsage = z.infer<typeof billingUsageSchema>
