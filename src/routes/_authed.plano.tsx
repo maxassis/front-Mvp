@@ -97,6 +97,15 @@ function PlanoPage() {
         </Alert>
       ) : null}
 
+      {subscriptions.isSuccess && !active ? (
+        <Alert>
+          <Info />
+          <AlertDescription>
+            Para conectar um numero, escolha um plano. 7 dias gratis, sem cobranca hoje.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {status === 'sucesso' && !active && pollExpired ? (
         <Button className="self-start" onClick={retry} size="sm" variant="outline">
           Atualizar
@@ -141,7 +150,7 @@ function PlanoPage() {
           ))}
         </div>
       ) : plans.isError ? null : (
-        <PlanCards plans={plans.data ?? []} />
+        <PlanCards active={active} plans={plans.data ?? []} />
       )}
     </div>
   )
@@ -250,7 +259,13 @@ function ActiveSubscriptionCard({ active }: { active: ActiveSubscription }) {
   )
 }
 
-function PlanCards({ plans }: { plans: BillingPlan[] }) {
+function PlanCards({
+  active,
+  plans
+}: {
+  active: ActiveSubscription | null
+  plans: BillingPlan[]
+}) {
   const free = plans.find((plan) => !isPaidPlan(plan))
 
   return (
@@ -274,7 +289,7 @@ function PlanCards({ plans }: { plans: BillingPlan[] }) {
         </Card>
       ))}
 
-      {free ? (
+      {!active && free ? (
         <Card className="opacity-80">
           <CardHeader>
             <CardTitle>{free.name}</CardTitle>
