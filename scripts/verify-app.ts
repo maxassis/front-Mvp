@@ -53,13 +53,74 @@ const readOtpFromMailbox = async email => {
  * enquanto o React ainda esta montando. Todo assertion de presenca precisa de
  * espera de verdade.
  */
-const seeText = async (page, text, label) => {
+const seeText = async (page, text, label, timeout = 15_000) => {
   try {
-    await page.getByText(text).first().waitFor({ state: 'visible', timeout: 15_000 })
+    await page.getByText(text).first().waitFor({ state: 'visible', timeout })
     check(label, true)
   } catch {
     check(label, false, `nao apareceu: ${text}`)
   }
+}
+
+/**
+ * Os ids dos campos (cardNumber/cardExpiry/cardCvc) sao estaveis mesmo com a
+ * pagina em pt-BR; procurar na pagina e nos frames evita adivinhar
+ * title/label localizado.
+ */
+const findStripeField = async (page, selector) => {
+  const inPage = page.locator(selector)
+  if ((await inPage.count()) > 0) {
+    return inPage.first()
+  }
+  for (const frame of page.frames()) {
+    const inFrame = frame.locator(selector)
+    if ((await inFrame.count()) > 0) {
+      return inFrame.first()
+    }
+  }
+  return null
+}
+
+const fillStripeField = async (page, selector, value) => {
+  const field = await findStripeField(page, selector)
+  if (!field) {
+    return false
+  }
+  await field.pressSequentially(value)
+  return true
+}
+
+const fillStripeName = async page => {
+  const filled = await fillStripeField(
+    page,
+    'input[autocomplete="cc-name"], input#cardholderName',
+    'Teste Verify'
+  )
+  if (filled) {
+    return true
+  }
+  const byLabel = page.getByLabel(/^nome/i).first()
+  if ((await byLabel.count()) > 0) {
+    await byLabel.fill('Teste Verify')
+    return true
+  }
+  for (const frame of page.frames()) {
+    const field = frame.getByLabel(/^nome/i).first()
+    if ((await field.count()) > 0) {
+      await field.fill('Teste Verify')
+      return true
+    }
+  }
+  return false
+}
+
+const clickStripeSubmit = async page => {
+  const buttons = page.locator('button[type="submit"]:visible').filter({
+    hasNotText: /link|google pay|apple pay/i
+  })
+  const preferred = buttons.filter({ hasText: /pagar|assinar|subscri|iniciar|pay/i })
+  const target = (await preferred.count()) > 0 ? preferred.first() : buttons.first()
+  await target.click()
 }
 
 const main = async () => {
@@ -117,6 +178,63 @@ const main = async () => {
       const landedOnApp = new URL(page.url()).pathname === '/plano'
       check('OTP + sign-in abrem sessao na tela de planos', landedOnApp, page.url())
       if (landedOnApp) {
+        await page
+          .locator('[data-slot="card"]')
+          .filter({ hasText: 'Standart' })
+          .getByRole('link', { name: 'Assinar' })
+          .click()
+
+        let onStripe = false
+        try {
+          await page.waitForURL(url => url.hostname.endsWith('stripe.com'), { timeout: 60_000 })
+          onStripe = true
+        } catch {
+          onStripe = false
+        }
+        check('abre o checkout do Stripe', onStripe, page.url())
+
+        if (onStripe) {
+          let formReady = false
+          try {
+            await page.locator('input#cardNumber').waitFor({ state: 'visible', timeout: 30_000 })
+            formReady = true
+          } catch {
+            formReady = false
+          }
+          check('formulario de cartao do Stripe renderizou', formReady, page.url())
+
+          const email = page.locator('input[type="email"], input[autocomplete="email"]').first()
+          if ((await email.count()) > 0 && (await email.inputValue()) === '') {
+            await email.fill(EMAIL)
+          }
+          const filled =
+            (await fillStripeField(page, 'input#cardNumber, input[autocomplete="cc-number"]', '4242424242424242')) &&
+            (await fillStripeField(page, 'input#cardExpiry, input[autocomplete="cc-exp"]', '1234')) &&
+            (await fillStripeField(page, 'input#cardCvc, input[autocomplete="cc-csc"]', '123')) &&
+            (await fillStripeName(page))
+          check('dados do cartao de teste preenchidos', filled, page.url())
+          await clickStripeSubmit(page)
+        }
+
+        let returned = false
+        try {
+          await page.waitForURL(
+            url => url.pathname === '/plano' && url.searchParams.get('status') === 'sucesso',
+            { timeout: 90_000 }
+          )
+          returned = true
+        } catch {
+          returned = false
+        }
+        check('checkout do Stripe volta para /plano com sucesso', returned, page.url())
+        await seeText(
+          page,
+          'Pagamento confirmado. Sua assinatura esta ativa.',
+          'banner de pagamento confirmado',
+          60_000
+        )
+        await seeText(page, 'Assinatura atual', 'cartao de assinatura atual aparece', 60_000)
+
         await page.goto(APP_URL, { waitUntil: 'networkidle' })
       }
       if (!landedOnApp) {
