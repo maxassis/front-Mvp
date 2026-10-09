@@ -12,16 +12,21 @@ import {
   clearPendingPassword,
   peekPendingPassword
 } from '@/features/auth/sign-in-credentials'
+import { parsePlanSearch } from '@/features/billing/plano-search'
 
 export const Route = createFileRoute('/register/verify')({
-  validateSearch: (search: Record<string, unknown>) => ({
-    email: typeof search.email === 'string' ? search.email : ''
-  }),
+  validateSearch: (search: Record<string, unknown>) => {
+    const { plan } = parsePlanSearch(search)
+    return {
+      email: typeof search.email === 'string' ? search.email : '',
+      ...(plan ? { plan } : {})
+    }
+  },
   component: VerifyEmailPage
 })
 
 function VerifyEmailPage() {
-  const { email: emailFromSearch } = Route.useSearch()
+  const { email: emailFromSearch, plan } = Route.useSearch()
   const navigate = useNavigate()
   const verify = useVerifyEmailOtp()
   const signIn = useSignIn()
@@ -42,7 +47,11 @@ function VerifyEmailPage() {
       await verify.mutateAsync({ email, otp })
       await signIn.mutateAsync({ email, password })
       clearPendingPassword()
-      await navigate({ to: '/' })
+      if (plan) {
+        await navigate({ to: '/checkout', search: { plan } })
+      } else {
+        await navigate({ to: '/' })
+      }
     } catch (error) {
       // A senha fica na memoria de proposito: o OTP aceita 5 tentativas e um
       // codigo errado nao pode trancar a tela. Se o sign-in falhar depois do

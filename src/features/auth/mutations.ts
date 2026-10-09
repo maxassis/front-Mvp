@@ -52,11 +52,16 @@ const GOOGLE_ERROR_FALLBACK =
 
 export const useSignInWithGoogle = () =>
   useMutation({
-    mutationFn: async (): Promise<void> => {
+    mutationFn: async ({ plan }: { plan?: string } = {}): Promise<void> => {
       const origin = window.location.origin
       const { data, error } = await authClient.signIn.social({
         callbackURL: `${origin}/`,
         errorCallbackURL: `${origin}/login`,
+        // Usuario novo com plano escolhido cai direto no checkout; quem ja tem
+        // conta mantem o callbackURL e volta para `/` como sempre.
+        ...(plan
+          ? { newUserCallbackURL: `${origin}/checkout?plan=${encodeURIComponent(plan)}` }
+          : {}),
         provider: 'google'
       })
 
