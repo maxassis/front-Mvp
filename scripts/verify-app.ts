@@ -113,9 +113,12 @@ const main = async () => {
     if (otp) {
       await page.getByLabel('Codigo').fill(otp)
       await page.getByRole('button', { name: 'Confirmar e entrar' }).click()
-      await page.waitForURL(`${APP_URL}/`, { timeout: 15_000 })
-      const landedOnApp = new URL(page.url()).pathname === '/'
-      check('OTP + sign-in abrem sessao', landedOnApp, page.url())
+      await page.waitForURL(`${APP_URL}/plano`, { timeout: 15_000 })
+      const landedOnApp = new URL(page.url()).pathname === '/plano'
+      check('OTP + sign-in abrem sessao na tela de planos', landedOnApp, page.url())
+      if (landedOnApp) {
+        await page.goto(APP_URL, { waitUntil: 'networkidle' })
+      }
       if (!landedOnApp) {
         const probe = await fetch(`${API_URL}/api/auth/get-session`, {
           headers: {

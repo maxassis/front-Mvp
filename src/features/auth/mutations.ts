@@ -57,11 +57,11 @@ export const useSignInWithGoogle = () =>
       const { data, error } = await authClient.signIn.social({
         callbackURL: `${origin}/`,
         errorCallbackURL: `${origin}/login`,
-        // Usuario novo com plano escolhido cai direto no checkout; quem ja tem
-        // conta mantem o callbackURL e volta para `/` como sempre.
-        ...(plan
-          ? { newUserCallbackURL: `${origin}/checkout?plan=${encodeURIComponent(plan)}` }
-          : {}),
+        // Usuario novo cai no checkout com plano ou na tela de planos sem
+        // plano; quem ja tem conta mantem o callbackURL e volta para `/`.
+        newUserCallbackURL: plan
+          ? `${origin}/checkout?plan=${encodeURIComponent(plan)}`
+          : `${origin}/plano`,
         provider: 'google'
       })
 

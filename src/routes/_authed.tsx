@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Outlet, createFileRoute, redirect, useRouter } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, redirect, useRouter } from '@tanstack/react-router'
 import { AlertCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -66,6 +66,10 @@ function AuthedLayout() {
 
         <Button onClick={handleConnectNew} size="sm" type="button">
           <Plus /> Conectar numero
+        </Button>
+
+        <Button asChild size="sm" variant="outline">
+          <Link to="/plano">Planos</Link>
         </Button>
 
         <Button disabled={isSigningOut} onClick={handleSignOut} size="sm" variant="outline">

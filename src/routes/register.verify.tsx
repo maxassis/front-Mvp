@@ -50,7 +50,7 @@ function VerifyEmailPage() {
       if (plan) {
         await navigate({ to: '/checkout', search: { plan } })
       } else {
-        await navigate({ to: '/' })
+        await navigate({ to: '/plano', search: {} })
       }
     } catch (error) {
       // A senha fica na memoria de proposito: o OTP aceita 5 tentativas e um
