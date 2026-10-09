@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 
 import { api } from '@/api/client'
 import { whatsappInstanceSchema } from '@/api/types'
+import { buildSetBusinessTypeBody } from '@/features/instances/business-type'
+import type { SetBusinessTypeInput } from '@/features/instances/business-type'
 import { instanceKeys } from '@/features/instances/queries'
 import { useUiStore } from '@/stores/ui-store'
 
@@ -18,6 +20,21 @@ export const useToggleChatbot = (instanceId: string) => {
       api.patch(`/api/whatsapp/instances/${instanceId}`, whatsappInstanceSchema, {
         chatbot_enabled: chatbotEnabled
       }),
+    onError: notifyError,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: instanceKeys.all })
+  })
+}
+
+export const useSetBusinessType = (instanceId: string) => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (input: SetBusinessTypeInput) =>
+      api.patch(
+        `/api/whatsapp/instances/${instanceId}`,
+        whatsappInstanceSchema,
+        buildSetBusinessTypeBody(input)
+      ),
     onError: notifyError,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: instanceKeys.all })
   })

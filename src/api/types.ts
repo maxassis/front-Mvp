@@ -18,9 +18,33 @@ export type InstanceStatus = (typeof INSTANCE_STATUSES)[number]
 export const WHATSAPP_PROVIDERS = ['waha', 'whatsapp_cloud_api'] as const
 export type WhatsappProvider = (typeof WHATSAPP_PROVIDERS)[number]
 
+/** Origem: apps/backend/src/modules/whatsapp/whatsapp-instances.schema.ts. */
+export const BUSINESS_TYPES = [
+  'saude',
+  'beleza',
+  'alimentacao',
+  'comercio',
+  'servicos',
+  'educacao',
+  'outros'
+] as const
+export type BusinessType = (typeof BUSINESS_TYPES)[number]
+
+export const BUSINESS_TYPE_LABELS = {
+  alimentacao: 'Alimentação',
+  beleza: 'Beleza',
+  comercio: 'Comércio',
+  educacao: 'Educação',
+  outros: 'Outros',
+  saude: 'Saúde',
+  servicos: 'Serviços'
+} as const satisfies Record<BusinessType, string>
+
 /** Origem: apps/backend/src/database/schema.ts, tabela whatsapp_instances. */
 export const whatsappInstanceSchema = z.object({
   agendaEnabled: z.boolean(),
+  businessType: z.enum(BUSINESS_TYPES).nullable(),
+  businessTypeLabel: z.string().nullable(),
   chatbotEnabled: z.boolean(),
   createdAt: z.string(),
   id: z.string(),

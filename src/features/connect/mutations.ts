@@ -18,6 +18,7 @@ export interface CreateInstanceInput {
 
 interface CreateInstanceBody {
   agenda_enabled: false
+  chatbot_enabled: false
   instance_name?: string
   phone_number: string
   provider: 'waha'
@@ -33,7 +34,9 @@ export const useCreateInstance = () => {
     mutationFn: (input: CreateInstanceInput) => {
       const body: CreateInstanceBody = {
         // A criacao recusa agenda_enabled true; a agenda so e liga depois, no onboarding.
+        // O chatbot nasce desligado porque o backend recusa ligar sem segmento definido.
         agenda_enabled: false,
+        chatbot_enabled: false,
         phone_number: input.phoneNumber,
         provider: 'waha',
         provider_instance_id: newProviderInstanceId()
