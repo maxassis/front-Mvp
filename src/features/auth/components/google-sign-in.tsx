@@ -2,7 +2,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useSignInWithGoogle } from '@/features/auth/mutations'
 
-export function GoogleSignIn() {
+export function GoogleSignIn({ plan }: { plan?: string }) {
   const google = useSignInWithGoogle()
 
   // O latch e o isPending somado ao isSuccess: entre o redirect interno e a
@@ -22,7 +22,7 @@ export function GoogleSignIn() {
       <Button
         className="w-full"
         disabled={isHandingOff}
-        onClick={() => google.mutate()}
+        onClick={() => google.mutate({ plan })}
         type="button"
         variant="outline"
       >
