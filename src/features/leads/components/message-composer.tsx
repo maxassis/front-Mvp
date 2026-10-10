@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react'
+import { Smile } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Textarea } from '@/components/ui/textarea'
 import { useSendLeadMessage } from '@/features/leads/mutations'
 
@@ -15,7 +18,27 @@ const MAX_MESSAGE_LENGTH = 4096
 
 export function MessageComposer({ instanceId, leadId }: MessageComposerProps) {
   const [text, setText] = useState('')
+  const [emojiOpen, setEmojiOpen] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const sendMessage = useSendLeadMessage(instanceId)
+
+  const insertEmoji = (data: EmojiClickData): void => {
+    const emoji = data.emoji
+    const el = textareaRef.current
+    if (!el) {
+      setText((previous) => previous + emoji)
+      return
+    }
+    const start = el.selectionStart ?? text.length
+    const end = el.selectionEnd ?? text.length
+    const next = text.slice(0, start) + emoji + text.slice(end)
+    setText(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      const position = start + emoji.length
+      el.setSelectionRange(position, position)
+    })
+  }
 
   const handleSend = (): void => {
     const trimmed = text.trim()
@@ -46,10 +69,27 @@ export function MessageComposer({ instanceId, leadId }: MessageComposerProps) {
           }
         }}
         placeholder="Digite para responder..."
+        ref={textareaRef}
         rows={3}
         value={text}
       />
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <Popover onOpenChange={setEmojiOpen} open={emojiOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              aria-label="Inserir emoji"
+              disabled={sendMessage.isPending}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <Smile />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto border-0 p-0" side="top">
+            <EmojiPicker onEmojiClick={insertEmoji} searchPlaceHolder="Buscar emoji..." />
+          </PopoverContent>
+        </Popover>
         <Button
           disabled={sendMessage.isPending || text.trim().length === 0}
           onClick={handleSend}
