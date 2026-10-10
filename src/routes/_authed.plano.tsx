@@ -14,7 +14,7 @@ import {
   checkoutSuccessPollMs
 } from '@/features/billing/checkout'
 import { useOpenBillingPortal } from '@/features/billing/mutations'
-import { isPaidPlan, paidPlans } from '@/features/billing/plan-catalog'
+import { isCurrentPlan, isPaidPlan, paidPlans, planDirection } from '@/features/billing/plan-catalog'
 import { validatePlanSearch } from '@/features/billing/plano-search'
 import { billingKeys, plansQuery, subscriptionsQuery, usageQuery } from '@/features/billing/queries'
 import type { ActiveSubscription } from '@/features/billing/subscription'
@@ -150,7 +150,7 @@ function PlanoPage() {
           ))}
         </div>
       ) : plans.isError ? null : (
-        <PlanCards active={active} plans={plans.data ?? []} />
+        <PlanCards active={active} plans={plans.data ?? []} used={usage.data?.used ?? null} />
       )}
     </div>
   )
@@ -261,33 +261,106 @@ function ActiveSubscriptionCard({ active }: { active: ActiveSubscription }) {
 
 function PlanCards({
   active,
-  plans
+  plans,
+  used
 }: {
   active: ActiveSubscription | null
   plans: BillingPlan[]
+  used: number | null
 }) {
   const free = plans.find((plan) => !isPaidPlan(plan))
+  const portal = useOpenBillingPortal()
+  const currentPlan = active
+    ? plans.find((plan) => plan.slug.trim().toLowerCase() === active.plan.trim().toLowerCase())
+    : undefined
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {paidPlans(plans).map((plan) => (
-        <Card key={plan.id}>
-          <CardHeader>
-            <CardTitle>{plan.name}</CardTitle>
-            <CardDescription>{plan.monthlyMessageLimit} mensagens por mes</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {plan.trialDays > 0 ? (
-              <p className="text-sm text-muted-foreground">{plan.trialDays} dias de teste gratis</p>
-            ) : null}
-            <Button asChild className="self-start" size="sm">
-              <Link search={{ plan: plan.slug }} to="/checkout">
-                Assinar
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+      {paidPlans(plans).map((plan) => {
+        const current = isCurrentPlan(plan, active)
+
+        if (current) {
+          return (
+            <Card key={plan.id}>
+              <CardHeader>
+                <CardTitle>{plan.name}</CardTitle>
+                <CardDescription>{plan.monthlyMessageLimit} mensagens por mes</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {plan.trialDays > 0 ? (
+                  <p className="text-sm text-muted-foreground">{plan.trialDays} dias de teste gratis</p>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <Button className="self-start" disabled size="sm">
+                    Assinado
+                  </Button>
+                  <Badge>Plano atual</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        }
+
+        if (active && planDirection(plans, active, plan) === 'downgrade' && currentPlan) {
+          const renewal = active.periodEnd ? formatDate(active.periodEnd) : null
+          const overLimit = used !== null && used > plan.monthlyMessageLimit
+
+          return (
+            <Card key={plan.id}>
+              <CardHeader>
+                <CardTitle>{plan.name}</CardTitle>
+                <CardDescription>{plan.monthlyMessageLimit} mensagens por mes</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  {renewal
+                    ? `Vale a partir de ${renewal}. Até lá você mantém ${currentPlan.monthlyMessageLimit} mensagens. Depois cai para ${plan.monthlyMessageLimit} e o contador recomeça.`
+                    : `Vale a partir da próxima renovação. Até lá você mantém ${currentPlan.monthlyMessageLimit} mensagens.`}
+                </p>
+                {overLimit ? (
+                  <p className="text-sm text-muted-foreground">
+                    {renewal
+                      ? `Você já usou ${used} neste ciclo, acima do teto do ${plan.name}. Se fosse imediato, ficaria sem mensagens até ${renewal}.`
+                      : `Você já usou ${used} neste ciclo, acima do teto do ${plan.name}.`}
+                  </p>
+                ) : null}
+                {active.cancelAtPeriodEnd ? (
+                  <p className="text-sm text-muted-foreground">
+                    Cancelamento agendado. Ajuste pelo Gerenciar assinatura.
+                  </p>
+                ) : null}
+                <Button
+                  className="self-start"
+                  disabled={portal.isPending || active.cancelAtPeriodEnd}
+                  onClick={() => portal.mutate()}
+                  size="sm"
+                >
+                  {portal.isPending ? 'Abrindo...' : 'Agendar downgrade'}
+                </Button>
+              </CardContent>
+            </Card>
+          )
+        }
+
+        return (
+          <Card key={plan.id}>
+            <CardHeader>
+              <CardTitle>{plan.name}</CardTitle>
+              <CardDescription>{plan.monthlyMessageLimit} mensagens por mes</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3">
+              {plan.trialDays > 0 ? (
+                <p className="text-sm text-muted-foreground">{plan.trialDays} dias de teste gratis</p>
+              ) : null}
+              <Button asChild className="self-start" size="sm">
+                <Link search={{ plan: plan.slug }} to="/checkout">
+                  {active ? 'Trocar de plano' : 'Assinar'}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )
+      })}
 
       {!active && free ? (
         <Card className="opacity-80">
