@@ -85,6 +85,17 @@ try {
     await page.getByRole('button', { name: 'Enviar' }).isDisabled()
   )
 
+  check(
+    'composer tem botao de emoji',
+    await page.getByRole('button', { name: 'Inserir emoji' }).isVisible()
+  )
+
+  await page.getByRole('button', { name: 'Inserir emoji' }).click()
+  check(
+    'picker de emoji abre com busca',
+    await page.getByPlaceholder('Buscar emoji...').isVisible()
+  )
+
   process.stdout.write(
     failures === 0 ? '\nTudo verde.\n' : `\n${failures} verificacao(oes) falharam.\n`
   )
