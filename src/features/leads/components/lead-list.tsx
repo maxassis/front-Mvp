@@ -3,7 +3,6 @@ import { MessageSquare } from 'lucide-react'
 import type { Lead } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { leadDisplayName, leadIntent } from '@/features/leads/lead-display'
 import { LEAD_FILTER_LABEL, LEAD_FILTERS, leadLifecycle } from '@/features/leads/lead-lifecycle'
@@ -59,7 +58,9 @@ export function LeadList({
         </div>
       </div>
 
-      <ScrollArea className="min-h-0 min-w-0 flex-1 overflow-hidden border-t">
+      {/* Scroll nativo: o Viewport do Radix embrulha tudo num display:table
+          que estica pela largura do texto e impede o truncate de disparar. */}
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto border-t">
         {isPending ? (
           <div className="space-y-2 p-3">
             {[0, 1, 2, 3].map((index) => (
@@ -72,27 +73,29 @@ export function LeadList({
             <p className="text-sm text-muted-foreground">Nenhum lead por aqui</p>
           </div>
         ) : (
-          <div className="pb-3">
+          <div className="min-w-0 pb-3">
             {leads.map((lead) => {
               const isSelected = lead.id === selectedLeadId
+              const displayName = leadDisplayName(lead)
+              const intent = leadIntent(lead)
               return (
                 <button
                   aria-current={isSelected}
                   className={cn(
-                    'w-full min-w-0 border-b px-3 py-3 text-left transition-colors hover:bg-muted/60',
+                    'w-full min-w-0 overflow-hidden border-b px-3 py-3 text-left transition-colors hover:bg-muted/60',
                     isSelected ? 'bg-muted' : 'bg-transparent'
                   )}
                   key={lead.id}
                   onClick={() => onSelect(lead.id)}
                   type="button"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="min-w-0 truncate text-sm font-medium">{leadDisplayName(lead)}</p>
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <p className="min-w-0 flex-1 truncate text-sm font-medium" title={displayName}>{displayName}</p>
                     <Badge className="shrink-0" variant="secondary">{leadLifecycle(lead.status).label}</Badge>
                   </div>
-                  {leadIntent(lead) ? (
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {leadIntent(lead)}
+                  {intent ? (
+                    <p className="mt-1 block w-full min-w-0 truncate text-xs text-muted-foreground" title={intent}>
+                      {intent}
                     </p>
                   ) : null}
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -103,7 +106,7 @@ export function LeadList({
             })}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   )
 }
