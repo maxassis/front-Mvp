@@ -13,6 +13,7 @@ const answered = (fieldKey: string, answer = 'resposta'): AnsweredField => ({
 const allRequired: AnsweredField[] = [
   'assistant_goal',
   'qualification_flow',
+  'required_customer_data',
   'assistant_persona',
   'tone_of_voice',
   'unknown_information_policy'
@@ -25,13 +26,14 @@ describe('normalizeSearch', () => {
 })
 
 describe('onboardingState', () => {
-  it('pede as 5 obrigatorias e trava opcionais no comeco', () => {
+  it('pede as 6 obrigatorias e trava opcionais no comeco', () => {
     const state = onboardingState(false, [], '')
     expect(state.pendingRequired.map((entry) => entry.fieldKey).sort()).toEqual(
       [
         'assistant_goal',
         'assistant_persona',
         'qualification_flow',
+        'required_customer_data',
         'tone_of_voice',
         'unknown_information_policy'
       ].sort()
@@ -39,7 +41,7 @@ describe('onboardingState', () => {
     expect(state.canAddOptional).toBe(false)
   })
 
-  it('libera opcionais quando as 5 estao respondidas e ativas', () => {
+  it('libera opcionais quando as 6 estao respondidas e ativas', () => {
     const state = onboardingState(false, allRequired, '')
     expect(state.pendingRequired).toEqual([])
     expect(state.canAddOptional).toBe(true)
@@ -86,7 +88,7 @@ describe('onboardingState', () => {
 
   it('ignora item salvo com chave fora do catalogo', () => {
     const state = onboardingState(false, [...allRequired, answered('human_handoff')], '')
-    expect(state.savedEntries).toHaveLength(5)
+    expect(state.savedEntries).toHaveLength(6)
     expect(state.canAddOptional).toBe(true)
   })
 
