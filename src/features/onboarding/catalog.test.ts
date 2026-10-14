@@ -47,12 +47,13 @@ describe('catalogEntries', () => {
     )
   })
 
-  it('marca exatamente as 5 obrigatorias', () => {
+  it('marca exatamente as 6 obrigatorias', () => {
     expect([...requiredFieldKeys].sort()).toEqual(
       [
         'assistant_goal',
         'assistant_persona',
         'qualification_flow',
+        'required_customer_data',
         'tone_of_voice',
         'unknown_information_policy'
       ].sort()

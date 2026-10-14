@@ -70,7 +70,7 @@ export const catalogEntries: CatalogEntry[] = withSortOrder([
     fieldKey: 'required_customer_data',
     label: 'Dados a coletar',
     question: 'Quais dados o bot deve coletar antes de encaminhar ou fechar uma oportunidade?',
-    requirement: 'optional'
+    requirement: 'required'
   },
   {
     category: 'Objetivo e qualificacao',
