@@ -127,7 +127,14 @@ export function InstanceCard({ instance }: InstanceCardProps) {
           <Button onClick={handleOpenFiles} size="sm" type="button" variant="outline">
             Arquivos
           </Button>
-          <Button onClick={handleOpenPlayground} size="sm" type="button" variant="outline">
+          <Button
+            disabled={!instance.chatbotEnabled}
+            onClick={handleOpenPlayground}
+            size="sm"
+            title={instance.chatbotEnabled ? undefined : 'Ligue o chatbot para testar'}
+            type="button"
+            variant="outline"
+          >
             <FlaskConical /> Testar
           </Button>
           {instance.provider === 'waha' && instance.status !== 'disconnected' ? (
