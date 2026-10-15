@@ -3,6 +3,7 @@ import { MessageSquare } from 'lucide-react'
 
 import type { PlaygroundTurn } from '../playground-chat'
 import { replyBubbles } from '../playground-chat'
+import { ReplyMedia } from './reply-media'
 import { cn } from '@/lib/utils'
 
 interface TestTranscriptProps {
@@ -54,6 +55,7 @@ export function TestTranscript({ turns }: TestTranscriptProps) {
                     {bubble}
                   </p>
                 ))}
+                {turn.reply.media ? <ReplyMedia media={turn.reply.media} /> : null}
               </div>
             </div>
           </div>
