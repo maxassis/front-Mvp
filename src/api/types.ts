@@ -290,3 +290,52 @@ export const billingUsageSchema = z.object({
 })
 
 export type BillingUsage = z.infer<typeof billingUsageSchema>
+
+/** Origem: apps/backend/src/modules/chatbot/chatbot-test.service.ts (ChatbotTestResult). */
+export const CHATBOT_TEST_ROLES = ['customer', 'assistant'] as const
+export type ChatbotTestRole = (typeof CHATBOT_TEST_ROLES)[number]
+
+/**
+ * Origem do contrato de mídia: rag-answer.service.ts (parseMediaValue, parceado
+ * de um JSON do LLM). A união discriminada pelo `type` escolhe o render no
+ * painel: arquivo (imagem/vídeo/documento com URL) ou localização com título.
+ */
+export const chatbotTestMediaSchema = z.discriminatedUnion('type', [
+  z.object({
+    caption: z.string().optional(),
+    filename: z.string().optional(),
+    mimetype: z.string().optional(),
+    type: z.enum(['image', 'video', 'document']),
+    url: z.string()
+  }),
+  z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+    title: z.string(),
+    type: z.literal('location')
+  })
+])
+
+export type ChatbotTestMedia = z.infer<typeof chatbotTestMediaSchema>
+
+/**
+ * `slots` vem mesclado pelo servidor (entrada + o que o LLM aprendeu no
+ * turno): o painel guarda esse conjunto e devolve na próxima chamada.
+ */
+export const chatbotTestReplySchema = z.object({
+  media: chatbotTestMediaSchema.optional(),
+  resposta: z.string(),
+  respostas: z.array(z.string()).optional(),
+  slots: z.record(z.string(), z.string())
+})
+
+export type ChatbotTestReply = z.infer<typeof chatbotTestReplySchema>
+
+/** Origem: chatbot.routes.ts (chatbotTestBodySchema). */
+export const chatbotTestBodySchema = z.object({
+  input: z.string().min(1).max(10_000),
+  slots: z.record(z.string(), z.string()).default({}),
+  turns: z.array(z.object({ role: z.enum(CHATBOT_TEST_ROLES), text: z.string() })).default([])
+})
+
+export type ChatbotTestBody = z.infer<typeof chatbotTestBodySchema>
