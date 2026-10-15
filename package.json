@@ -15,6 +15,7 @@
     "verify:google": "bun scripts/verify-google-sign-in.ts",
     "seed:leads": "bun scripts/seed-leads.ts",
     "verify:leads": "bun scripts/verify-leads.ts",
+    "verify:playground": "bun scripts/verify-playground.ts",
     "test": "bun test"
   },
   "dependencies": {
