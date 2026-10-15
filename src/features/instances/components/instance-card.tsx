@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { MessageSquare, Tag } from 'lucide-react'
+import { FlaskConical, MessageSquare, Tag } from 'lucide-react'
 
 import type { WhatsappInstance, WhatsappProvider } from '@/api/types'
 import { BUSINESS_TYPE_LABELS } from '@/api/types'
@@ -57,6 +57,11 @@ export function InstanceCard({ instance }: InstanceCardProps) {
   const handleOpenFiles = () => {
     selectInstance(instance.id)
     void navigate({ search: { instanceId: instance.id }, to: '/files' })
+  }
+
+  const handleOpenPlayground = () => {
+    selectInstance(instance.id)
+    void navigate({ search: { instanceId: instance.id }, to: '/playground' })
   }
 
   // Sem segmento o backend recusa ligar o chatbot; abre o dialog em vez de ligar.
@@ -121,6 +126,9 @@ export function InstanceCard({ instance }: InstanceCardProps) {
           </Button>
           <Button onClick={handleOpenFiles} size="sm" type="button" variant="outline">
             Arquivos
+          </Button>
+          <Button onClick={handleOpenPlayground} size="sm" type="button" variant="outline">
+            <FlaskConical /> Testar
           </Button>
           {instance.provider === 'waha' && instance.status !== 'disconnected' ? (
             <Button
