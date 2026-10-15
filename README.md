@@ -25,6 +25,7 @@ Variavel de ambiente: copie `.env.example` para `.env` se a API nao estiver em `
 | `bun run verify:app` | Percorre o fluxo inteiro num Chromium de verdade contra o backend de verdade |
 | `bun run verify:google` | Prova a fatia do login com Google no app de verdade, sem passar pelo Google |
 | `bun run seed:leads` | Cria instância, conversa, lead e mensagens direto no banco |
+| `bun run verify:playground` | Prova a tela de teste do bot num Chromium de verdade com o backend respondendo |
 
 `routeTree.gen.ts` é gerado pelo plugin do TanStack Router e está no `.gitignore`. O `tsc` roda depois do `tsr generate` porque o build precisa da árvore de rotas antes de tipar.
 
