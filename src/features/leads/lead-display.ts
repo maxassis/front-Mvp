@@ -78,3 +78,69 @@ export const leadSubtitle = (lead: Pick<Lead, 'chatId' | 'intent' | 'phone'>): s
   const intent = leadIntent(lead)
   return [phone, intent].filter(Boolean).join(' · ') || 'Sem telefone'
 }
+
+/** Rotulo por tipo de midia; tipo desconhecido (ou texto vazio) cai em 'Mensagem'. */
+const MESSAGE_TYPE_LABEL: Record<string, string> = {
+  audio: 'Audio',
+  document: 'Documento',
+  image: 'Foto',
+  location: 'Localizacao',
+  sticker: 'Figurinha',
+  video: 'Video'
+}
+
+/**
+ * A projecao do lead nao traz foto de perfil, entao o avatar sai das iniciais
+ * do nome; sem nome, dos digitos do telefone; sem telefone, de um rotulo neutro.
+ */
+export const leadInitials = (lead: Pick<Lead, 'chatId' | 'name' | 'phone'>): string => {
+  const name = lead.name?.trim()
+  if (name) {
+    const words = name.split(/\s+/u)
+    const first = words[0]?.[0] ?? ''
+    const last = words.length > 1 ? (words.at(-1)?.[0] ?? '') : ''
+    return `${first}${last}`.toUpperCase()
+  }
+
+  const digits = leadPhone(lead)?.replaceAll(/\D/gu, '') ?? ''
+  return digits.length > 0 ? digits.slice(0, 2) : 'C'
+}
+
+/**
+ * Previa de uma linha da ultima mensagem. Sem texto, o tipo vira rotulo; o
+ * prefixo separa a fala do atendente da fala do cliente.
+ */
+export const leadLastMessagePreview = (lead: Pick<Lead, 'lastMessage'>): string | null => {
+  const message = lead.lastMessage
+  if (!message) {
+    return null
+  }
+  const text = message.text?.trim()
+  const body = text ? text : (MESSAGE_TYPE_LABEL[message.messageType] ?? 'Mensagem')
+  return message.direction === 'outbound' ? `Voce: ${body}` : body
+}
+
+/**
+ * Horario da ultima mensagem, com queda para a conversa e depois para o lead.
+ * Hoje vira HH:mm; outro dia vira dd/MM. `now` entra por parametro para o teste
+ * fixar o dia sem depender do relogio.
+ */
+export const leadLastMessageTime = (
+  lead: Pick<Lead, 'conversation' | 'lastMessage' | 'updatedAt'>,
+  now: Date = new Date()
+): string => {
+  const value = lead.lastMessage?.receivedAt ?? lead.conversation.lastMessageAt ?? lead.updatedAt
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  const isToday =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+
+  return isToday
+    ? date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}

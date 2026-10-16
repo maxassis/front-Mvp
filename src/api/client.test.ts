@@ -71,6 +71,7 @@ describe('leadSchema', () => {
     id: 'lead-1',
     intent: 'Corte de cabelo',
     isReturn: false,
+    lastMessage: null,
     name: 'Maria Souza',
     phone: '5511990000001',
     previousLeadId: null,

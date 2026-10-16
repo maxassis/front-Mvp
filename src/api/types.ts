@@ -72,6 +72,14 @@ export const leadConversationSchema = z.object({
   status: z.string()
 })
 
+/** Origem: apps/backend/src/modules/leads/leads.repository.ts (mensagem mais recente da conversa). */
+export const leadLastMessageSchema = z.object({
+  direction: z.string(),
+  messageType: z.string(),
+  receivedAt: z.string(),
+  text: z.string().nullable()
+})
+
 export const leadSchema = z.object({
   chatId: z.string(),
   conversation: leadConversationSchema,
@@ -81,6 +89,7 @@ export const leadSchema = z.object({
   id: z.string(),
   intent: z.string().nullable(),
   isReturn: z.boolean(),
+  lastMessage: leadLastMessageSchema.nullable(),
   name: z.string().nullable(),
   phone: z.string().nullable(),
   previousLeadId: z.string().nullable(),

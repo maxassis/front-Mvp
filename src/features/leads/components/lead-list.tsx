@@ -4,7 +4,13 @@ import type { Lead } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { leadDisplayName, leadIntent } from '@/features/leads/lead-display'
+import { LeadAvatar } from '@/features/leads/components/lead-avatar'
+import {
+  leadDisplayName,
+  leadIntent,
+  leadLastMessagePreview,
+  leadLastMessageTime
+} from '@/features/leads/lead-display'
 import { LEAD_FILTER_LABEL, LEAD_FILTERS, leadLifecycle } from '@/features/leads/lead-lifecycle'
 import type { LeadFilter } from '@/features/leads/lead-lifecycle'
 import { cn } from '@/lib/utils'
@@ -17,14 +23,6 @@ interface LeadListProps {
   onSelect: (leadId: string) => void
   selectedLeadId: string | null
 }
-
-const formatUpdatedAt = (value: string): string =>
-  new Date(value).toLocaleString('pt-BR', {
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    month: '2-digit'
-  })
 
 export function LeadList({
   filter,
@@ -78,6 +76,8 @@ export function LeadList({
               const isSelected = lead.id === selectedLeadId
               const displayName = leadDisplayName(lead)
               const intent = leadIntent(lead)
+              const preview = leadLastMessagePreview(lead)
+              const time = leadLastMessageTime(lead)
               return (
                 <button
                   aria-current={isSelected}
@@ -89,18 +89,25 @@ export function LeadList({
                   onClick={() => onSelect(lead.id)}
                   type="button"
                 >
-                  <div className="flex min-w-0 items-center justify-between gap-2">
-                    <p className="min-w-0 flex-1 truncate text-sm font-medium" title={displayName}>{displayName}</p>
-                    <Badge className="shrink-0" variant="secondary">{leadLifecycle(lead.status).label}</Badge>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <LeadAvatar lead={lead} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <p className="min-w-0 flex-1 truncate text-sm font-medium" title={displayName}>{displayName}</p>
+                        <span className="shrink-0 text-xs text-muted-foreground">{time}</span>
+                      </div>
+                      {/* A previa manda na segunda linha; a intencao so aparece quando ainda nao ha mensagem. */}
+                      <div className="mt-0.5 flex min-w-0 items-center justify-between gap-2">
+                        <p
+                          className="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+                          title={preview ?? intent ?? undefined}
+                        >
+                          {preview ?? intent ?? 'Sem mensagem'}
+                        </p>
+                        <Badge className="shrink-0" variant="secondary">{leadLifecycle(lead.status).label}</Badge>
+                      </div>
+                    </div>
                   </div>
-                  {intent ? (
-                    <p className="mt-1 block w-full min-w-0 truncate text-xs text-muted-foreground" title={intent}>
-                      {intent}
-                    </p>
-                  ) : null}
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatUpdatedAt(lead.updatedAt)}
-                  </p>
                 </button>
               )
             })}
