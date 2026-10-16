@@ -104,7 +104,7 @@ function LoginPage() {
 
           <div className="flex justify-end">
             <Link
-              className="font-medium text-foreground underline-offset-4 hover:underline"
+              className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
               to="/forgot-password"
             >
               Esqueceu a senha?
