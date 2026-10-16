@@ -102,6 +102,15 @@ function LoginPage() {
             />
           </div>
 
+          <div className="flex justify-end">
+            <Link
+              className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
+              to="/forgot-password"
+            >
+              Esqueceu a senha?
+            </Link>
+          </div>
+
           {signIn.isError ? (
             <Alert variant="destructive">
               <AlertDescription>{signIn.error.message}</AlertDescription>

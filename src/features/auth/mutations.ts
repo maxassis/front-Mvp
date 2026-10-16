@@ -149,3 +149,33 @@ export const useSignOut = () => {
     }
   })
 }
+
+export const useRequestPasswordReset = () =>
+  useMutation({
+    mutationFn: async (input: { email: string }) => {
+      const { error } = await authClient.emailOtp.requestPasswordReset({
+        email: input.email
+      })
+
+      if (error) {
+        throw new Error(error.message ?? 'Nao foi possivel enviar o codigo')
+      }
+    }
+  })
+
+export const useResetPassword = () =>
+  useMutation({
+    mutationFn: async (input: { email: string; otp: string; password: string }) => {
+      const { data, error } = await authClient.emailOtp.resetPassword({
+        email: input.email,
+        otp: input.otp,
+        password: input.password
+      })
+
+      if (error || !data) {
+        throw new Error(error?.message ?? 'Codigo invalido ou expirado')
+      }
+
+      return data
+    }
+  })
