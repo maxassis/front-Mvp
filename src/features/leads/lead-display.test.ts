@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'bun:test'
 
-import { leadDisplayName, leadIntent, leadPhone, leadSubtitle } from './lead-display'
+import {
+  leadDisplayName,
+  leadInitials,
+  leadIntent,
+  leadLastMessagePreview,
+  leadLastMessageTime,
+  leadPhone,
+  leadSubtitle
+} from './lead-display'
 import { leadLifecycle } from './lead-lifecycle'
 
 describe('formatPhone', () => {
@@ -106,5 +114,148 @@ describe('leadLifecycle', () => {
     expect(lifecycle.canAssign).toBe(false)
     expect(lifecycle.canSendMessage).toBe(false)
     expect(lifecycle.botIsAnswering).toBe(true)
+  })
+})
+
+describe('leadInitials', () => {
+  it('usa as iniciais do nome quando existe', () => {
+    expect(leadInitials({ chatId: '', name: 'Maria Souza', phone: null })).toBe('MS')
+    expect(leadInitials({ chatId: '', name: 'Ana Paula Lima', phone: null })).toBe('AL')
+  })
+
+  it('usa uma letra quando o nome tem uma palavra so', () => {
+    expect(leadInitials({ chatId: '', name: 'Maria', phone: null })).toBe('M')
+  })
+
+  it('cai para os digitos do telefone quando nao ha nome', () => {
+    expect(
+      leadInitials({ chatId: '5511990000001@c.us', name: null, phone: '5511990000001' })
+    ).toBe('55')
+  })
+
+  it('cai para C quando nao ha nome nem telefone', () => {
+    expect(leadInitials({ chatId: '123456@lid', name: null, phone: null })).toBe('C')
+    expect(leadInitials({ chatId: '', name: '   ', phone: null })).toBe('C')
+  })
+})
+
+describe('leadLastMessagePreview', () => {
+  it('mostra o texto da mensagem quando existe', () => {
+    expect(
+      leadLastMessagePreview({
+        lastMessage: {
+          direction: 'inbound',
+          messageType: 'text',
+          receivedAt: '2026-06-10T09:30:00Z',
+          text: 'Oi, tudo bem?'
+        }
+      })
+    ).toBe('Oi, tudo bem?')
+  })
+
+  it('prefixa Voce quando a mensagem e do atendente', () => {
+    expect(
+      leadLastMessagePreview({
+        lastMessage: {
+          direction: 'outbound',
+          messageType: 'text',
+          receivedAt: '2026-06-10T09:30:00Z',
+          text: 'Ja te respondo'
+        }
+      })
+    ).toBe('Voce: Ja te respondo')
+  })
+
+  it('usa rotulo por tipo de midia quando nao ha texto', () => {
+    const preview = (messageType: string, direction = 'inbound') =>
+      leadLastMessagePreview({
+        lastMessage: { direction, messageType, receivedAt: '2026-06-10T09:30:00Z', text: null }
+      })
+    expect(preview('image')).toBe('Foto')
+    expect(preview('audio')).toBe('Audio')
+    expect(preview('video')).toBe('Video')
+    expect(preview('document')).toBe('Documento')
+    expect(preview('sticker')).toBe('Figurinha')
+    expect(preview('location')).toBe('Localizacao')
+    expect(preview('text')).toBe('Mensagem')
+    expect(preview('image', 'outbound')).toBe('Voce: Foto')
+  })
+
+  it('devolve null quando o lead nao tem mensagem', () => {
+    expect(leadLastMessagePreview({ lastMessage: null })).toBeNull()
+  })
+})
+
+describe('leadLastMessageTime', () => {
+  const conversation = (lastMessageAt: string | null) => ({
+    chatId: '5511990000001@c.us',
+    chatType: 'user',
+    createdAt: '2026-01-01T00:00:00Z',
+    id: 'conv-1',
+    instanceId: 'inst-1',
+    lastMessageAt,
+    status: 'active'
+  })
+
+  const now = new Date(2026, 5, 10, 12, 0)
+
+  it('mostra HH:mm quando a mensagem e de hoje', () => {
+    expect(
+      leadLastMessageTime(
+        {
+          conversation: conversation(null),
+          lastMessage: {
+            direction: 'inbound',
+            messageType: 'text',
+            receivedAt: new Date(2026, 5, 10, 9, 30).toISOString(),
+            text: 'oi'
+          },
+          updatedAt: '2026-06-10T12:00:00Z'
+        },
+        now
+      )
+    ).toBe('09:30')
+  })
+
+  it('mostra dd/MM quando a mensagem e de outro dia', () => {
+    expect(
+      leadLastMessageTime(
+        {
+          conversation: conversation(null),
+          lastMessage: {
+            direction: 'inbound',
+            messageType: 'text',
+            receivedAt: new Date(2026, 5, 3, 9, 30).toISOString(),
+            text: 'oi'
+          },
+          updatedAt: '2026-06-10T12:00:00Z'
+        },
+        now
+      )
+    ).toBe('03/06')
+  })
+
+  it('cai para a conversa e depois para o lead', () => {
+    expect(
+      leadLastMessageTime(
+        {
+          conversation: conversation(new Date(2026, 5, 10, 8, 5).toISOString()),
+          lastMessage: null,
+          updatedAt: '2026-06-10T12:00:00Z'
+        },
+        now
+      )
+    ).toBe('08:05')
+
+    expect(
+      leadLastMessageTime(
+        {
+          conversation: conversation(null),
+          lastMessage: null,
+          updatedAt: new Date(2026, 5, 9, 7, 0).toISOString()
+        },
+        now
+      )
+    ).toBe('09/06')
   })
 })
