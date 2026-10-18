@@ -187,6 +187,50 @@ describe('apiJson', () => {
   })
 })
 
+describe('ApiError.retryAfter', () => {
+  const originalFetch = globalThis.fetch
+
+  afterAll(() => {
+    globalThis.fetch = originalFetch
+  })
+
+  const reply429 = (headers: Record<string, string>): Response =>
+    new Response(
+      JSON.stringify({
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded, try again later',
+        statusCode: 429
+      }),
+      { headers: { 'Content-Type': 'application/json', ...headers }, status: 429 }
+    )
+
+  const sendAndCatch = async (headers: Record<string, string>): Promise<ApiError> => {
+    globalThis.fetch = stubFetch(async () => reply429(headers))
+    try {
+      await apiJson('/api/demo/chatbot', z.object({}))
+    } catch (error) {
+      return error as ApiError
+    }
+    throw new Error('esperava 429')
+  }
+
+  it('le os segundos do header Retry-After', async () => {
+    const error = await sendAndCatch({ 'Retry-After': '7200' })
+    expect(error.status).toBe(429)
+    expect(error.retryAfter).toBe(7200)
+  })
+
+  it('vira null quando o header vem em formato de data', async () => {
+    const error = await sendAndCatch({ 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' })
+    expect(error.retryAfter).toBeNull()
+  })
+
+  it('vira null quando o header falta', async () => {
+    const error = await sendAndCatch({})
+    expect(error.retryAfter).toBeNull()
+  })
+})
+
 describe('onboardingItemSchema', () => {
   const valid = {
     answer: 'Atender com proximidade',

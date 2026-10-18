@@ -16,13 +16,21 @@ export class ApiError extends Error {
   readonly code: string
   readonly issues: string[]
   readonly status: number
+  /** Segundos o backend pede para esperar; presente so no 429 dos limiters. */
+  readonly retryAfter: number | null
 
-  constructor(input: { code: string; issues: string[]; status: number }) {
+  constructor(input: {
+    code: string
+    issues: string[]
+    retryAfter?: number | null
+    status: number
+  }) {
     super(input.issues.join(' ') || `Erro ${input.status}`)
     this.name = 'ApiError'
     this.code = input.code
     this.issues = input.issues
     this.status = input.status
+    this.retryAfter = input.retryAfter ?? null
   }
 
   get isUnauthorized(): boolean {
@@ -35,7 +43,7 @@ export class ApiError extends Error {
   }
 }
 
-const toApiError = (status: number, body: unknown): ApiError => {
+const toApiError = (status: number, body: unknown, retryAfter: string | null): ApiError => {
   const envelope: ErrorEnvelope =
     typeof body === 'object' && body !== null ? (body as ErrorEnvelope) : {}
 
@@ -45,9 +53,15 @@ const toApiError = (status: number, body: unknown): ApiError => {
       ? [envelope.message]
       : []
 
+  const retryAfterSeconds = retryAfter === null ? undefined : Number(retryAfter)
+
   return new ApiError({
     code: typeof envelope.error === 'string' ? envelope.error : 'RequestError',
     issues: rawIssues,
+    retryAfter:
+      retryAfterSeconds === undefined || Number.isNaN(retryAfterSeconds)
+        ? null
+        : retryAfterSeconds,
     status
   })
 }
@@ -56,7 +70,7 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://teste.maxdev.sbs'
 
 /**
  * Chamado quando a API responde 401 fora do fluxo de sessao. O guard de rota so
- * roda na navegacao, entao sem esteAviso um cookie que morre no meio do uso
+ * roda na navegacao, entao sem este aviso um cookie que morre no meio do uso
  * deixa a tela presa mostrando dado velho e um alerta de erro, sem caminho para
  * voltar ao login.
  */
@@ -74,7 +88,7 @@ const request = async (path: string, init: RequestInit): Promise<Response> => {
 
   if (!response.ok) {
     const body = await response.json().catch(() => null)
-    const error = toApiError(response.status, body)
+    const error = toApiError(response.status, body, response.headers.get('Retry-After'))
 
     // O proprio sign-in responde 401 com credencial errada; nesse caso quem trata
     // e a tela de login, nao um logout global.

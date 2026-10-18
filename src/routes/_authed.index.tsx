@@ -5,6 +5,7 @@ import { Plus, Smartphone } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { subscriptionsQuery } from '@/features/billing/queries'
 import { InstanceCard } from '@/features/instances/components/instance-card'
 import { instancesQuery } from '@/features/instances/queries'
 
@@ -12,7 +13,12 @@ export const Route = createFileRoute('/_authed/')({ component: InstancesPage })
 
 function InstancesPage() {
   const instances = useQuery(instancesQuery)
+  const subscriptions = useQuery(subscriptionsQuery)
   const list = instances.data ?? []
+
+  // O teste so interessa a quem ainda nao assina. Pendente ou erro esconde o
+  // botao: sem a resposta, nao da para afirmar que a pessoa nao tem plano.
+  const showDemo = subscriptions.isSuccess && subscriptions.data === null
 
   return (
     <div className="mx-auto flex h-full max-w-5xl flex-col gap-6 overflow-y-auto p-6">
@@ -23,6 +29,12 @@ function InstancesPage() {
             Gerencie suas conexoes de WhatsApp em um so lugar
           </p>
         </div>
+
+        {showDemo ? (
+          <Button asChild variant="outline">
+            <Link to="/demo">Testar atendimento</Link>
+          </Button>
+        ) : null}
       </div>
 
       {instances.isPending ? (

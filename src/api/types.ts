@@ -348,3 +348,51 @@ export const chatbotTestBodySchema = z.object({
 })
 
 export type ChatbotTestBody = z.infer<typeof chatbotTestBodySchema>
+
+/** Origem: apps/backend/src/modules/chatbot/chatbot.routes.ts (demoChatbotBodySchema). */
+export const CHATBOT_DEMO_ROLES = ['customer', 'assistant'] as const
+export type ChatbotDemoRole = (typeof CHATBOT_DEMO_ROLES)[number]
+
+/**
+ * O texto livre do segmento so e exigido quando a categoria e `outros`; a
+ * checagem e um refine fora do objeto para as demais categorias seguirem
+ * aceitando o campo opcional.
+ */
+export const demoChatbotAnswersSchema = z
+  .object({
+    assistantName: z.string().trim().min(1).max(60),
+    businessName: z.string().trim().min(1).max(80),
+    businessType: z.enum(BUSINESS_TYPES),
+    businessTypeLabel: z.string().trim().max(120).optional(),
+    differential: z.string().trim().min(1).max(500),
+    offerings: z.string().trim().min(1).max(500),
+    tone: z.string().trim().min(1).max(120)
+  })
+  .refine(
+    (answers) =>
+      answers.businessType !== 'outros' || (answers.businessTypeLabel?.length ?? 0) > 0,
+    { message: 'businessTypeLabel is required when businessType is outros', path: ['businessTypeLabel'] }
+  )
+
+export type DemoChatbotAnswers = z.infer<typeof demoChatbotAnswersSchema>
+
+export const demoChatbotTurnSchema = z.object({
+  role: z.enum(CHATBOT_DEMO_ROLES),
+  text: z.string().min(1).max(2000)
+})
+
+export type DemoChatbotTurn = z.infer<typeof demoChatbotTurnSchema>
+
+/** A abertura vai sem `input` e sem `turns`; os defaults existem para o POST enxuto. */
+export const demoChatbotBodySchema = z.object({
+  answers: demoChatbotAnswersSchema,
+  input: z.string().max(2000).default(''),
+  /** Espelha DEMO_MAX_TURNS do backend (2 * DEMO_MAX_EXCHANGES + 2). */
+  turns: z.array(demoChatbotTurnSchema).max(18).default([])
+})
+
+export type DemoChatbotBody = z.infer<typeof demoChatbotBodySchema>
+
+export const demoChatbotReplySchema = z.object({ resposta: z.string() })
+
+export type DemoChatbotReply = z.infer<typeof demoChatbotReplySchema>
