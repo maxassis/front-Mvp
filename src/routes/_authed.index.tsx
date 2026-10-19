@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { subscriptionsQuery } from '@/features/billing/queries'
+import { demoUsageQuery } from '@/features/demo/queries'
 import { InstanceCard } from '@/features/instances/components/instance-card'
 import { instancesQuery } from '@/features/instances/queries'
 
@@ -14,11 +15,17 @@ export const Route = createFileRoute('/_authed/')({ component: InstancesPage })
 function InstancesPage() {
   const instances = useQuery(instancesQuery)
   const subscriptions = useQuery(subscriptionsQuery)
+  const demoUsage = useQuery(demoUsageQuery)
   const list = instances.data ?? []
 
   // O teste so interessa a quem ainda nao assina. Pendente ou erro esconde o
   // botao: sem a resposta, nao da para afirmar que a pessoa nao tem plano.
   const showDemo = subscriptions.isSuccess && subscriptions.data === null
+
+  // Sem a resposta de uso nao da para afirmar que ainda resta um teste, entao
+  // pendente/erro nao mostra botao nenhum.
+  const demoAvailable = showDemo && demoUsage.isSuccess && demoUsage.data.remaining > 0
+  const demoExhausted = showDemo && demoUsage.isSuccess && demoUsage.data.remaining === 0
 
   return (
     <div className="mx-auto flex h-full max-w-5xl flex-col gap-6 overflow-y-auto p-6">
@@ -30,9 +37,13 @@ function InstancesPage() {
           </p>
         </div>
 
-        {showDemo ? (
+        {demoAvailable ? (
           <Button asChild variant="outline">
             <Link to="/demo">Testar atendimento</Link>
+          </Button>
+        ) : demoExhausted ? (
+          <Button asChild>
+            <Link to="/plano">Escolher plano</Link>
           </Button>
         ) : null}
       </div>

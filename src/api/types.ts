@@ -287,7 +287,8 @@ export const billingPlanListSchema = z.array(billingPlanSchema)
 /**
  * Origem: apps/backend/src/modules/billing/billing.service.ts (MonthlyUsage),
  * exposta por GET /api/billing/usage (autenticada). `planSlug` nulo e o usuario
- * sem assinatura caindo no limite default do backend.
+ * sem assinatura: o limite entao vem do plano free do catalogo, e o badge da
+ * tela mostra "sem plano" em vez de um plano escolhido.
  */
 export const billingUsageSchema = z.object({
   limit: z.number(),
@@ -396,3 +397,12 @@ export type DemoChatbotBody = z.infer<typeof demoChatbotBodySchema>
 export const demoChatbotReplySchema = z.object({ resposta: z.string() })
 
 export type DemoChatbotReply = z.infer<typeof demoChatbotReplySchema>
+
+/** Origem: apps/backend/src/modules/chatbot/chatbot-demo-usage.service.ts (DemoUsageStatus), GET /api/demo/chatbot/usage. */
+export const demoUsageSchema = z.object({
+  limit: z.number(),
+  remaining: z.number(),
+  used: z.number()
+})
+
+export type DemoUsage = z.infer<typeof demoUsageSchema>

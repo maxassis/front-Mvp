@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
@@ -21,6 +21,7 @@ import {
 } from '@/features/demo/demo-chat'
 import type { DemoChat } from '@/features/demo/demo-chat'
 import { useSendDemoChatbot } from '@/features/demo/mutations'
+import { demoKeys, demoUsageQuery } from '@/features/demo/queries'
 
 export const Route = createFileRoute('/_authed/demo')({ component: DemoPage })
 
@@ -34,9 +35,11 @@ const readRateLimit = (error: unknown): string | null => {
 
 function DemoPage() {
   const send = useSendDemoChatbot()
+  const queryClient = useQueryClient()
   const [phase, setPhase] = useState<'form' | 'chat'>('form')
   const [chat, setChat] = useState<DemoChat | null>(null)
   const subscriptions = useQuery(subscriptionsQuery)
+  const demoUsage = useQuery(demoUsageQuery)
 
   // Quem ja assina nao tem o que testar. Pendente ou erro libera a tela: o
   // teste e o caminho de quem ainda nao decidiu, entao nao barra por duvida.
@@ -51,10 +54,13 @@ function DemoPage() {
     send.mutate(
       { answers, input: OPENING_INPUT, turns: [] },
       {
-        onSuccess: (reply) =>
+        onSuccess: (reply) => {
           setChat((current) =>
             current ? addMessage(current, 'assistant', reply.resposta) : current
           )
+          // A cota acabou de cair; revalida para o CTA da home refletir.
+          queryClient.invalidateQueries({ queryKey: demoKeys.usage })
+        }
       }
     )
   }
@@ -77,6 +83,22 @@ function DemoPage() {
   const handleReset = () => {
     setChat(null)
     setPhase('form')
+  }
+
+  if (demoUsage.data?.remaining === 0) {
+    return (
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm">
+          <h1 className="text-xl font-semibold tracking-tight">Voce ja usou seu teste gratuito</h1>
+          <p className="text-sm text-muted-foreground">
+            O teste e unico. Assine um plano para conversar de verdade.
+          </p>
+          <Button asChild className="mt-4">
+            <Link to="/plano">Escolher plano</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (phase !== 'chat' || !chat) {
