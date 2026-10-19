@@ -12,10 +12,15 @@ import { instancesQuery } from '@/features/instances/queries'
 import { useUiStore } from '@/stores/ui-store'
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, location }) => {
     const session = await context.queryClient.ensureQueryData(sessionQuery)
     if (!session) {
-      throw redirect({ to: '/login' })
+      // A raiz `/` e o vitrine do visitante; qualquer deep link carrega a
+      // intencao na query de `/login` para voltar direto ao destino.
+      if (location.pathname === '/') {
+        throw redirect({ to: '/landing' })
+      }
+      throw redirect({ to: '/login', search: { redirect: location.href } })
     }
     return { user: session.user }
   },

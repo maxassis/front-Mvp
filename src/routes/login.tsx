@@ -38,7 +38,7 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
-  const { error: callbackError } = Route.useSearch()
+  const { error: callbackError, redirect } = Route.useSearch()
   const navigate = useNavigate()
   const signIn = useSignIn()
   const [email, setEmail] = useState('')
@@ -48,7 +48,7 @@ function LoginPage() {
     event.preventDefault()
     try {
       await signIn.mutateAsync({ email, password })
-      await navigate({ to: '/' })
+      await navigate({ to: redirect ?? '/' })
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Falha ao entrar')
     }
