@@ -219,7 +219,14 @@ function UsageCard({
             <p className="text-sm text-muted-foreground">
               Ciclo ate {formatDate(usage.data.periodEnd)}
             </p>
-            <Badge variant="outline">{usage.data.planSlug ?? 'free'}</Badge>
+            <Badge variant="outline">{usage.data.planSlug ?? 'sem plano'}</Badge>
+            {/* planSlug nulo significa sem assinatura: o free e contorno do
+            backend, e o demo chatbot (1 teste/dia) nao consome este contador. */}
+            {usage.data.planSlug === null ? (
+              <p className="w-full text-sm text-muted-foreground">
+                Voce ainda nao assinou. O teste gratuito do chatbot nao entra nesta contagem.
+              </p>
+            ) : null}
           </div>
         )}
       </CardContent>
@@ -366,11 +373,8 @@ function PlanCards({
         <Card className="opacity-80">
           <CardHeader>
             <CardTitle>{free.name}</CardTitle>
-            <CardDescription>{free.monthlyMessageLimit} mensagens por mes</CardDescription>
+            <CardDescription>{free.monthlyMessageLimit} mensagens no periodo gratuito</CardDescription>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">Seu plano atual sem custo.</p>
-          </CardContent>
         </Card>
       ) : null}
     </div>
