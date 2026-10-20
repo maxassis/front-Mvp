@@ -1,0 +1,18 @@
+- generic [ref=f5e2]:
+  - generic [ref=f5e3]:
+    - banner [ref=f5e4]:
+      - paragraph [ref=f5e6]: probe-1760883400@example.com
+      - button "Conectar numero" [ref=f5e7]
+      - link "Planos" [ref=f5e8] [cursor=pointer]:
+        - /url: /plano
+      - button "Sair" [ref=f5e9]
+    - main [ref=f5e10]:
+      - generic [ref=f5e29]:
+        - generic [ref=f5e30]:
+          - heading "Parear WhatsApp" [level=1] [ref=f5e31]
+          - paragraph [ref=f5e32]: Escaneie o QR code no aparelho para concluir a conexao
+        - paragraph [ref=f5e36]: Iniciando sessao...
+        - generic [ref=f5e37]:
+          - paragraph [ref=f5e38]: "Estado na WAHA: STARTING"
+          - button "Verificar status" [ref=f5e39]
+  - region "Notifications alt+T"

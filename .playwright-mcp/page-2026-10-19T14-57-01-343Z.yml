@@ -1,0 +1,18 @@
+- generic [ref=f1e2]:
+  - generic [ref=f1e30]:
+    - generic [ref=f1e31]:
+      - heading "Confirmar e-mail" [level=1] [ref=f1e32]
+      - paragraph [ref=f1e33]: Enviamos um codigo de 6 digitos para probe-1760883400@example.com
+    - generic [ref=f1e34]:
+      - generic [ref=f1e35]:
+        - generic [ref=f1e36]: Email
+        - textbox "Email" [disabled]: probe-1760883400@example.com
+      - generic [ref=f1e37]:
+        - generic [ref=f1e38]: Codigo
+        - textbox "Codigo" [active] [ref=f1e39]:
+          - /placeholder: "000000"
+      - button "Nao recebeu o codigo? Reenviar" [ref=f1e40]
+      - button "Confirmar e entrar" [disabled]
+    - link "Voltar para o login" [ref=f1e42] [cursor=pointer]:
+      - /url: /login
+  - region "Notifications alt+T"

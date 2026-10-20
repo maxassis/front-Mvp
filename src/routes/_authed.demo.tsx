@@ -85,7 +85,10 @@ function DemoPage() {
     setPhase('form')
   }
 
-  if (demoUsage.data?.remaining === 0) {
+  // O gate vale so antes de a conversa comecar: a abertura consome o teste
+  // unico e invalida o uso, entao sem `!chat` o refetch esconderia o chat
+  // recem-aberto atras da tela de esgotado.
+  if (!chat && demoUsage.data?.remaining === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm">

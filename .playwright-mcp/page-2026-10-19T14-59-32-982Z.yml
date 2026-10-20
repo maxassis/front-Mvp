@@ -1,0 +1,23 @@
+- generic [ref=f2e2]:
+  - generic [ref=f2e27]:
+    - banner [ref=f2e28]:
+      - paragraph [ref=f2e30]: probe-1760883400@example.com
+      - button "Conectar numero" [ref=f2e31]
+      - link "Planos" [ref=f2e32] [cursor=pointer]:
+        - /url: /plano
+      - button "Sair" [ref=f2e33]
+    - main [ref=f2e34]:
+      - generic [ref=f2e35]:
+        - generic [ref=f2e36]:
+          - generic [ref=f2e37]:
+            - heading "Conexoes" [level=1] [ref=f2e38]
+            - paragraph [ref=f2e39]: Gerencie suas conexoes de WhatsApp em um so lugar
+          - link "Testar atendimento" [ref=f2e40] [cursor=pointer]:
+            - /url: /demo
+        - generic [ref=f2e42]:
+          - generic [ref=f2e45]:
+            - paragraph [ref=f2e46]: Nenhuma instancia conectada
+            - paragraph [ref=f2e47]: Conecte um numero de WhatsApp para comecar a receber mensagens
+          - link "Conectar WhatsApp" [ref=f2e48] [cursor=pointer]:
+            - /url: /connect
+  - region "Notifications alt+T"
