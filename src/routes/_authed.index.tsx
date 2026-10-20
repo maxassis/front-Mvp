@@ -22,7 +22,7 @@ function InstancesPage() {
   // botao: sem a resposta, nao da para afirmar que a pessoa nao tem plano.
   const showDemo = subscriptions.isSuccess && subscriptions.data === null
 
-  // Sem a resposta de uso nao da para afirmar que ainda resta um teste, entao
+  // Sem a resposta de uso nao da para afirmar que ainda resta saldo, entao
   // pendente/erro nao mostra botao nenhum.
   const demoAvailable = showDemo && demoUsage.isSuccess && demoUsage.data.remaining > 0
   const demoExhausted = showDemo && demoUsage.isSuccess && demoUsage.data.remaining === 0
