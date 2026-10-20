@@ -4,6 +4,7 @@ import {
   exchangeLimitMessage,
   formatResetTime,
   quotaExhaustedMessage,
+  quotaRenewalMessage,
   remainingMessagesLabel
 } from './demo-quota'
 
@@ -24,6 +25,12 @@ describe('saldo diario do demo', () => {
   test('quotaExhaustedMessage avisa o gasto e a hora da renovacao', () => {
     expect(quotaExhaustedMessage(MEIA_NOITE_BRASILIA)).toBe(
       'Voce usou todas as mensagens de hoje. O saldo renova as 00:00 (horario de Brasilia).'
+    )
+  })
+
+  test('quotaRenewalMessage devolve so a frase de renovacao', () => {
+    expect(quotaRenewalMessage(MEIA_NOITE_BRASILIA)).toBe(
+      'O saldo renova as 00:00 (horario de Brasilia).'
     )
   })
 

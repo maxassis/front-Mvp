@@ -23,6 +23,7 @@ import type { DemoChat } from '@/features/demo/demo-chat'
 import {
   exchangeLimitMessage,
   quotaExhaustedMessage,
+  quotaRenewalMessage,
   remainingMessagesLabel
 } from '@/features/demo/demo-quota'
 import { useSendDemoChatbot } from '@/features/demo/mutations'
@@ -108,7 +109,7 @@ function DemoPage() {
           <h1 className="text-xl font-semibold tracking-tight">
             Voce usou todas as mensagens de hoje
           </h1>
-          <p className="text-sm text-muted-foreground">{quotaExhaustedMessage(resetsAt)}</p>
+          <p className="text-sm text-muted-foreground">{quotaRenewalMessage(resetsAt)}</p>
           <Button asChild className="mt-4">
             <Link to="/plano">Escolher plano</Link>
           </Button>

@@ -25,9 +25,13 @@ export const formatResetTime = (resetsAt: string): string => {
   return resetTimeFormatter.format(date)
 }
 
+/** Frase de renovacao, usada no card de saldo vazio e no aviso da conversa. */
+export const quotaRenewalMessage = (resetsAt: string): string =>
+  `O saldo renova as ${formatResetTime(resetsAt)} (horario de Brasilia).`
+
 /** Aviso de saldo acabar, com a hora da renovacao. */
 export const quotaExhaustedMessage = (resetsAt: string): string =>
-  `Voce usou todas as mensagens de hoje. O saldo renova as ${formatResetTime(resetsAt)} (horario de Brasilia).`
+  `Voce usou todas as mensagens de hoje. ${quotaRenewalMessage(resetsAt)}`
 
 /** Aviso do teto da conversa, que e menor que o saldo do dia. */
 export const exchangeLimitMessage = (): string =>
