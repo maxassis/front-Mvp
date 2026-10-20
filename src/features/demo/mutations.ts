@@ -22,8 +22,12 @@ export const useSendDemoChatbot = () => {
     mutationFn: (body: DemoChatbotBody) =>
       api.post('/api/demo/chatbot', demoChatbotReplySchema, body),
     // Todo envio consome uma mensagem do saldo do dia, entao o contador so
-    // fica certo se o uso for revalidado aqui, e nao so na abertura.
-    onError: notifyError,
+    // fica certo se o uso for revalidado aqui, e nao so na abertura. O erro
+    // tambem revalida, porque um 429 de saldo deixa o contador antigo na tela.
+    onError: error => {
+      notifyError(error)
+      void queryClient.invalidateQueries({ queryKey: demoKeys.usage })
+    },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: demoKeys.usage })
   })
 }
