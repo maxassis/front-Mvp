@@ -1,9 +1,10 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { ApiError, api } from '@/api/client'
 import { demoChatbotReplySchema } from '@/api/types'
 import type { DemoChatbotBody } from '@/api/types'
+import { demoKeys } from './queries'
 
 const notifyError = (error: unknown): void => {
   // O 429 do teste limitado ja ganha banner na propria conversa; o bruto em
@@ -14,9 +15,19 @@ const notifyError = (error: unknown): void => {
   toast.error(error instanceof Error ? error.message : 'Operacao falhou')
 }
 
-export const useSendDemoChatbot = () =>
-  useMutation({
+export const useSendDemoChatbot = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
     mutationFn: (body: DemoChatbotBody) =>
       api.post('/api/demo/chatbot', demoChatbotReplySchema, body),
-    onError: notifyError
+    // Todo envio consome uma mensagem do saldo do dia, entao o contador so
+    // fica certo se o uso for revalidado aqui, e nao so na abertura. O erro
+    // tambem revalida, porque um 429 de saldo deixa o contador antigo na tela.
+    onError: error => {
+      notifyError(error)
+      void queryClient.invalidateQueries({ queryKey: demoKeys.usage })
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: demoKeys.usage })
   })
+}

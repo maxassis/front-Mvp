@@ -6,8 +6,9 @@ import { demoKeys } from './queries'
 describe('demo usage', () => {
   test('parseia um payload valido', () => {
     const payload = {
-      limit: 1,
-      remaining: 1,
+      limit: 20,
+      remaining: 20,
+      resetsAt: '2026-10-20T03:00:00.000Z',
       used: 0
     }
 
@@ -17,6 +18,16 @@ describe('demo usage', () => {
   test('rejeita payload sem remaining', () => {
     const result = demoUsageSchema.safeParse({
       limit: 1,
+      used: 0
+    })
+
+    expect(result.success).toBe(false)
+  })
+
+  test('rejeita payload sem resetsAt', () => {
+    const result = demoUsageSchema.safeParse({
+      limit: 20,
+      remaining: 20,
       used: 0
     })
 

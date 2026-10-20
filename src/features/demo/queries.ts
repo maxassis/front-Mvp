@@ -8,8 +8,9 @@ export const demoKeys = {
 }
 
 /**
- * Cota do demo (1 teste por conta, para sempre). Fonte da verdade do estado
- * esgotado: o 429 nao distingue o teste ja usado do burst do tier rag.
+ * Saldo diario do demo: quantas mensagens a conta ainda tem hoje e quando o
+ * saldo renova (meia-noite de Brasilia). O 429 do backend traz o codigo do
+ * motivo; o uso traz o numero que resta.
  */
 export const demoUsageQuery = queryOptions({
   queryFn: () => api.get('/api/demo/chatbot/usage', demoUsageSchema),

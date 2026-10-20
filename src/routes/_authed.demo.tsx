@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
@@ -20,26 +20,42 @@ import {
   joinTurns
 } from '@/features/demo/demo-chat'
 import type { DemoChat } from '@/features/demo/demo-chat'
+import {
+  exchangeLimitMessage,
+  quotaExhaustedMessage,
+  quotaRenewalMessage,
+  remainingMessagesLabel
+} from '@/features/demo/demo-quota'
 import { useSendDemoChatbot } from '@/features/demo/mutations'
-import { demoKeys, demoUsageQuery } from '@/features/demo/queries'
+import { demoUsageQuery } from '@/features/demo/queries'
 
 export const Route = createFileRoute('/_authed/demo')({ component: DemoPage })
 
-/** O teto vive no tier rag, contado por pessoa; um 429 aqui e passageiro. */
-const readRateLimit = (error: unknown): string | null => {
+/**
+ * O 429 do demo tem tres motivos: saldo do dia, teto da conversa e burst do
+ * tier rag. O codigo do envelope separa os dois primeiros; o resto e burst.
+ */
+const readSendFailure = (error: unknown, resetsAt: string): string | null => {
   if (!(error instanceof ApiError) || error.status !== 429) {
     return null
+  }
+  if (error.code === 'DEMO_QUOTA_EXHAUSTED') {
+    return quotaExhaustedMessage(resetsAt)
+  }
+  if (error.code === 'DEMO_EXCHANGE_LIMIT') {
+    return exchangeLimitMessage()
   }
   return 'Muitas mensagens em pouco tempo. Aguarde um instante e siga conversando.'
 }
 
 function DemoPage() {
   const send = useSendDemoChatbot()
-  const queryClient = useQueryClient()
   const [phase, setPhase] = useState<'form' | 'chat'>('form')
   const [chat, setChat] = useState<DemoChat | null>(null)
   const subscriptions = useQuery(subscriptionsQuery)
   const demoUsage = useQuery(demoUsageQuery)
+  const remaining = demoUsage.data?.remaining
+  const resetsAt = demoUsage.data?.resetsAt ?? ''
 
   // Quem ja assina nao tem o que testar. Pendente ou erro libera a tela: o
   // teste e o caminho de quem ainda nao decidiu, entao nao barra por duvida.
@@ -58,8 +74,6 @@ function DemoPage() {
           setChat((current) =>
             current ? addMessage(current, 'assistant', reply.resposta) : current
           )
-          // A cota acabou de cair; revalida para o CTA da home refletir.
-          queryClient.invalidateQueries({ queryKey: demoKeys.usage })
         }
       }
     )
@@ -85,17 +99,17 @@ function DemoPage() {
     setPhase('form')
   }
 
-  // O gate vale so antes de a conversa comecar: a abertura consome o teste
-  // unico e invalida o uso, entao sem `!chat` o refetch esconderia o chat
-  // recem-aberto atras da tela de esgotado.
+  // O gate vale so antes de a conversa comecar: a abertura consome uma
+  // mensagem do saldo e invalida o uso, entao sem `!chat` o refetch esconderia
+  // o chat recem-aberto atras da tela de saldo vazio.
   if (!chat && demoUsage.data?.remaining === 0) {
     return (
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex w-full max-w-md flex-col items-center gap-2 rounded-xl border bg-card p-6 text-center shadow-sm">
-          <h1 className="text-xl font-semibold tracking-tight">Voce ja usou seu teste gratuito</h1>
-          <p className="text-sm text-muted-foreground">
-            O teste e unico. Assine um plano para conversar de verdade.
-          </p>
+          <h1 className="text-xl font-semibold tracking-tight">
+            Voce usou todas as mensagens de hoje
+          </h1>
+          <p className="text-sm text-muted-foreground">{quotaRenewalMessage(resetsAt)}</p>
           <Button asChild className="mt-4">
             <Link to="/plano">Escolher plano</Link>
           </Button>
@@ -121,7 +135,7 @@ function DemoPage() {
   }
 
   const full = demoIsFull(chat)
-  const rateLimit = readRateLimit(send.error)
+  const failure = readSendFailure(send.error, resetsAt)
 
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col overflow-hidden p-6">
@@ -137,9 +151,9 @@ function DemoPage() {
         </Button>
       </div>
 
-      {rateLimit ? (
+      {failure ? (
         <Alert className="mt-2">
-          <AlertDescription>{rateLimit}</AlertDescription>
+          <AlertDescription>{failure}</AlertDescription>
         </Alert>
       ) : send.isError ? (
         <Alert className="mt-2" variant="destructive">
@@ -170,7 +184,16 @@ function DemoPage() {
         </div>
       ) : null}
 
-      <DemoComposer disabled={full} isPending={send.isPending} onSend={handleSend} />
+      <DemoComposer
+        disabled={full || remaining === 0}
+        isPending={send.isPending}
+        onSend={handleSend}
+      />
+      {remaining !== undefined && (
+        <p className="mt-1 text-center text-xs text-muted-foreground">
+          {remainingMessagesLabel(remaining)}
+        </p>
+      )}
       <p className="mt-1 text-center text-xs text-muted-foreground">
         Teste limitado: ate {MAX_DEMO_EXCHANGES} perguntas por conversa.
       </p>

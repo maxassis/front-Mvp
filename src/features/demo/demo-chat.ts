@@ -17,7 +17,8 @@ export const OPENING_INPUT = ''
 
 /**
  * Cada fala do visitante conta como uma troca. Teto de UX (encurta o teste e
- * leva ao CTA), nao guarda de custo: o backend so tem o tier global.
+ * leva ao CTA) e teto do backend, que recusa a conversa com
+ * DEMO_EXCHANGE_LIMIT.
  */
 export const MAX_DEMO_EXCHANGES = 8
 

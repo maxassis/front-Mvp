@@ -402,6 +402,8 @@ export type DemoChatbotReply = z.infer<typeof demoChatbotReplySchema>
 export const demoUsageSchema = z.object({
   limit: z.number(),
   remaining: z.number(),
+  /** Proxima renovacao do saldo diario, em ISO. */
+  resetsAt: z.string(),
   used: z.number()
 })
 
